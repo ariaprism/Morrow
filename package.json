@@ -1,0 +1,8 @@
+{
+  "name": "nook-music-bridge",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@eldment/meting-agent": "1.6.11"
+  }
+}

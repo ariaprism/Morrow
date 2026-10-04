@@ -1,0 +1,32 @@
+# Secrets
+.env
+
+# Data (lives only on the server, never in git)
+data/
+
+# Local notes and generated artifacts
+.nook-local/
+*.local.md
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+node_modules/
+
+# Test and coverage output
+.coverage
+htmlcov/
+coverage.xml
+
+# Logs
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
