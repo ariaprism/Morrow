@@ -8726,7 +8726,7 @@ function renderStudyRuns(runs){
   if(active){
     const state=document.createElement("div");state.className="footprint-run-state";
     state.innerHTML='<span class="pulse"></span><span></span>';
-    state.querySelector("span:last-child").textContent=active.status==="queued"?"Morrow正往小房间走……":"Morrow在小房间里待一会儿……";
+    state.querySelector("span:last-child").textContent=assistantName()+(active.status==="queued"?"正往小房间走……":"在小房间里待一会儿……");
     box.appendChild(state);
   }
   const filtered=FOOTPRINT_RUNS.filter(studyRunIsVisible).filter(run=>{
@@ -8939,7 +8939,7 @@ $("#studyRunBtn").onclick=async()=>{
   })});
   const data=await r.json();button.textContent="现在唤醒一次";
   if(!r.ok){toast(data.error||"这次没有叫醒"+assistantPronoun());await loadStudyData();return;}
-  toast("Morrow进小房间了");await loadStudyData();
+  toast(assistantName()+"进小房间了");await loadStudyData();
 };
 async function openStudyAutoDialog(){
   await loadStudyWakeSettings();
