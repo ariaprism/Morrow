@@ -1,4 +1,4 @@
-"""Wake Nook from a future paper note and let her answer naturally."""
+"""Wake Morrow from a future paper note and let her answer naturally."""
 
 from __future__ import annotations
 
@@ -69,7 +69,7 @@ def _wake_attempt(*, session_id, event, provider_id=None, model="", think=False,
     text = "".join(reply).strip()
     return {"ok": bool(text) and not error, "message": text, "reasoning": "".join(reasoning),
             "reasoning_ms": reasoning_ms, "tool_log": tool_log, "usage": usage,
-            "error": error or ("" if text else "Nook醒来后没有留下话"),
+            "error": error or ("" if text else "Morrow醒来后没有留下话"),
             "material": material, **meta}
 
 

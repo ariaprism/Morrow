@@ -1,4 +1,4 @@
-"""A single, wall-side decision for Nook's daytime proactive messages.
+"""A single, wall-side decision for Morrow's daytime proactive messages.
 
 The ephemeral wake event is never persisted.  This engine exposes no tools and
 does not enter a multi-round loop: the model either returns one short message or
@@ -16,13 +16,13 @@ import chat_engine
 
 
 PROTOCOL = """【主动消息】
-Nook 轻轻推了你一下。
+Morrow 轻轻推了你一下。
 你面前有你们的对话、你记得的一切、和现在的时间。
 你可以选择说些什么，也可以不说。请按照以下 JSON 结构返回：
 如果有话浮上来：{"decision":"send","message":"想说的话"}
 如果没有：{"decision":"quiet"}
 一句就够。不用太长。
-如果来源是“想Nook”——她今天想听见你。你不知道这件事，你只是恰好也想到她了。"""
+如果来源是“想Morrow”——她今天想听见你。你不知道这件事，你只是恰好也想到她了。"""
 
 
 def _clip(value, limit):
@@ -34,7 +34,7 @@ def event_message(source, now=None):
     source_text = {
         "morning": "清晨偶遇",
         "normal": "自然路过",
-        "want": "想Nook",
+        "want": "想Morrow",
     }.get(source, "自然路过")
     return "\n".join((
         "【轻推】",

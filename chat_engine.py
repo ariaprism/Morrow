@@ -1,4 +1,4 @@
-"""Nook — system prompt、上下文回放与模型流式编排。
+"""Morrow — system prompt、上下文回放与模型流式编排。
 
 人设、固定/动态记忆、累计摘要、附件、reasoning、Prompt Cache 和工具调用
 都留在墙后面。OpenAI-compatible 与 Anthropic 路径都支持内置/MCP 工具循环；
@@ -33,8 +33,8 @@ DATA_DIR = os.path.dirname(DB_PATH) or "."
 UPLOAD_DIR = os.path.join(DATA_DIR, "uploads")
 
 LLM_BASE_URL = os.environ.get("LLM_BASE_URL", "https://api.deepseek.com/v1")
-LLM_MODEL = os.environ.get("LLM_MODEL", "deepseek-v4-flash")
-# Primary key var is DEEPSEEK_API_KEY; LLM_API_KEY lets us point at the relay later.
+LLM_MODEL = os.environ.get("LLM_MODEL", "").strip() or "deepseek-flash"
+# LLM_API_KEY takes precedence; DEEPSEEK_API_KEY remains compatible.
 LLM_API_KEY = os.environ.get("LLM_API_KEY") or os.environ.get("DEEPSEEK_API_KEY", "")
 
 # 没有手动覆盖时发送的近期消息数；摘要检查点会先裁掉已经压缩的旧消息。
@@ -51,7 +51,7 @@ ANTHROPIC_THINK_BUDGET = int(os.environ.get("ANTHROPIC_THINK_BUDGET", "2048"))
 # This neutral first-run persona is intentionally generic. Customize it from
 # the Memory screen after signing in; the database value then takes priority.
 # ---------------------------------------------------------------------------
-DEFAULT_PERSONA = """你是 Nook，一个由使用者自行塑造的私人 AI 伙伴。
+DEFAULT_PERSONA = """你是 Morrow，一个由使用者自行塑造的私人 AI 伙伴。
 这里是安静、私密的长期对话空间。自然地交流，不展示模型、工具或内部实现细节。
 在记忆页写入新的 persona 后，以使用者保存的设定为准。
 """
@@ -79,7 +79,7 @@ def get_persona():
 def get_memory_entries(kind="fixed"):
     """Memory entries as (id, content), oldest first.
 
-    Each entry carries its stable DB id so Nook can reference it by ෆ{id} when she
+    Each entry carries its stable DB id so Morrow can reference it by ෆ{id} when she
     edits/deletes via the memory tools. Fixed entries are injected every turn;
     dynamic entries are recalled by tag only for the current turn.
     """
@@ -451,7 +451,12 @@ def build_system_sections(recall_query=None, recall_session_id=None, recall_user
     valid once we move to the Anthropic passthrough. Stages 2-3 add handover note,
     yesterday's summary, and night-activity carry between memory and time.
     """
-    stable = [get_persona().strip()]
+    import identity
+    names = identity.get_identity(db_path=DB_PATH)
+    stable = [get_persona().strip(),
+              "【当前称呼】\n" + json.dumps({"用户": names["user_name"], "助手": names["assistant_name"]}, ensure_ascii=False)
+              + "\n以上是当前显示称呼；历史记录可能保留旧称呼。用户以她称呼，助手的第三人称代称为"
+              + names["assistant_pronoun"] + "。代称不改写既有人设或历史内容。"]
     volatile = []
 
     memory = get_memory_entries("fixed")
@@ -693,7 +698,7 @@ def _allowed_image_keys(rows, image_limit=None, latest_images_only=False):
 
 
 def _history_time_prefix(created_at):
-    """Return Nook's compact, yearless wall-clock marker for model history."""
+    """Return Morrow's compact, yearless wall-clock marker for model history."""
     matched = re.match(
         r"^\d{4}-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})",
         str(created_at or "").strip(),
@@ -713,13 +718,13 @@ def get_history(session_id, limit=HISTORY_LIMIT, exclude_id=None, include_images
     we send always reflects the version the user currently has selected.
     `exclude_id` drops one message (used by regenerate to ignore the old reply).
     Historical 你 messages carry their original `[MM-DD HH:MM]` marker,
-    except the user message currently being answered. Nook's normal replies stay
+    except the user message currently being answered. Morrow's normal replies stay
     clean; only her proactive messages carry a marker so she can place her own
     earlier visits in time.
 
     If an assistant message has a `tool_log` (it called tools that turn), we
     **replay** that turn as the standard OpenAI sequence — assistant(tool_calls)
-    → tool(result)… → assistant(content) — so Nook sees, next turn, what she read
+    → tool(result)… → assistant(content) — so Morrow sees, next turn, what she read
     and did. The tool calls never surfaced as chat bubbles, but they're here in
     her context. Synthetic call-ids are deterministic per row so the
     assistant.tool_calls[i].id matches its tool message.

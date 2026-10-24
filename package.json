@@ -1,5 +1,5 @@
 {
-  "name": "nook-music-bridge",
+  "name": "morrow-music-bridge",
   "private": true,
   "type": "module",
   "dependencies": {

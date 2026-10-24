@@ -6,6 +6,7 @@ import json
 import re
 import zipfile
 from pathlib import Path
+import identity
 
 
 class ConversationExportError(ValueError):
@@ -38,17 +39,19 @@ def _attachments(raw):
     return value if isinstance(value, list) else []
 
 
-def _markdown(session, messages, include_reasoning, include_attachments, resource_dir, upload_dir, zip_file=None):
+def _markdown(session, messages, include_reasoning, include_attachments, resource_dir, upload_dir, zip_file=None, names=None):
+    names = names or identity.DEFAULTS
     lines = [f"# {session['title'] or '新的聊天'}", "", f"> 导出时间范围：{session['created_at']} - {session['updated_at']}", ""]
     used_attachment_names = set()
     for message in messages:
         role = message["role"] if message["role"] in {"user", "assistant"} else str(message["role"])
-        role_label = {"user": "🦊", "assistant": "🐟"}.get(role, role)
+        role_label = {"user": names["user_name"], "assistant": names["assistant_name"]}.get(role, role)
+        role_label = re.sub(r"([\\`*_{}\[\]<>#])", r"\\\1", role_label)
         lines.extend([f"## {role_label}", "", message["content"] or "", ""])
         if include_reasoning and role == "assistant" and (message["reasoning"] or "").strip():
             lines.extend([
                 "<details>",
-                "<summary>Nook的思考过程</summary>",
+                "<summary>think...</summary>",
                 "",
                 message["reasoning"].strip(),
                 "",
@@ -107,6 +110,7 @@ def export_conversations(db, upload_dir, destination, session_ids, include_reaso
     if len(session_ids) > 200:
         raise ConversationExportError("一次最多导出 200 个对话。")
     sessions = _load_sessions(db, session_ids)
+    identity_names = identity.get_identity(db)
     visible_where = _visible_messages_where(db)
     as_zip = len(sessions) > 1 or include_attachments
     used_stems = set()
@@ -122,7 +126,7 @@ def export_conversations(db, upload_dir, destination, session_ids, include_reaso
             f"WHERE session_id = ?{visible_where} ORDER BY id ASC",
             (session["id"],),
         ).fetchall()
-        markdown = _markdown(session, messages, include_reasoning, False, "", upload_dir)
+        markdown = _markdown(session, messages, include_reasoning, False, "", upload_dir, names=identity_names)
         destination.write_text(markdown, encoding="utf-8")
         return {"mimetype": "text/markdown; charset=utf-8", "extension": ".md", "filename": f"{names[0]}.md"}
 
@@ -135,7 +139,7 @@ def export_conversations(db, upload_dir, destination, session_ids, include_reaso
             ).fetchall()
             resource_dir = f"{stem}_附件"
             markdown = _markdown(
-                session, messages, include_reasoning, include_attachments, resource_dir, upload_dir, archive
+                session, messages, include_reasoning, include_attachments, resource_dir, upload_dir, archive, identity_names
             )
             archive.writestr(f"{stem}.md", markdown.encode("utf-8"))
-    return {"mimetype": "application/zip", "extension": ".zip", "filename": "nook-conversations.zip"}
+    return {"mimetype": "application/zip", "extension": ".zip", "filename": "morrow-conversations.zip"}

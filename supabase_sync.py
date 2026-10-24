@@ -1,4 +1,4 @@
-"""Local-first one-way mirror from Nook's SQLite database to Supabase."""
+"""Local-first one-way mirror from Morrow's SQLite database to Supabase."""
 
 import json
 import os

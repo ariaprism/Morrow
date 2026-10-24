@@ -1,4 +1,4 @@
-"""Android Web Push subscriptions and delivery for Nook messages."""
+"""Android Web Push subscriptions and delivery for Morrow messages."""
 
 from __future__ import annotations
 
@@ -9,6 +9,8 @@ import re
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
+
+from identity import get_identity
 
 
 PRIVATE_SETTING = "web_push_vapid_private"
@@ -74,11 +76,11 @@ def _record_delivery(db, *, kind, session_id, message_id, result):
     db.commit()
 
 
-def notification_segments(message):
+def notification_segments(message, *, assistant_name="Morrow"):
     """Turn one reply into a small sequence of blank-line-delimited previews."""
     text = str(message or "").strip()
     if not text:
-        return ["Nook发来一条消息"]
+        return [f"{assistant_name}发来一条消息"]
     parts = [part.strip() for part in re.split(r"\r?\n[ \t]*\r?\n+", text) if part.strip()]
     if len(parts) > MAX_NOTIFICATION_SEGMENTS:
         parts = parts[:MAX_NOTIFICATION_SEGMENTS - 1] + [
@@ -118,17 +120,19 @@ def send_notification(db, session_id, message, *, kind="message", message_id=Non
             "attempted": 0, "sent": 0, "failed": 0, "removed": 0,
             "error": "这台设备尚未在服务器登记" if endpoint else "没有已登记的通知设备",
         }
+    assistant_name = get_identity(db)["assistant_name"]
     sent = 0
     removed = []
     errors = []
     for row in rows:
-        bodies = notification_segments(message) if row["preview"] else ["Nook发来一条消息"]
+        bodies = (notification_segments(message, assistant_name=assistant_name)
+                  if row["preview"] else [f"{assistant_name}发来一条消息"])
         group_suffix = int(message_id) if message_id is not None else "latest"
         group = (
             f"nook-{str(kind or 'message')}-{int(session_id)}-{group_suffix}"
         )
         payload = {
-            "title": "Nook" if row["preview"] else "Nook",
+            "title": assistant_name,
             "body": bodies[0],
             "bodies": bodies,
             "url": f"/?push_session={int(session_id)}",

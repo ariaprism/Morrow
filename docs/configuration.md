@@ -1,0 +1,31 @@
+# Configuration details
+
+Display names can be edited under Memory → We without a first-run wizard. The default assistant name is Morrow. Names are stored in the existing settings table; saved conversations and persona text are not rewritten.
+
+The welcome screen says “Welcome home” until authentication loads a saved user name. Compression boundary captions follow the assistant name. Keepsake and song comments use saved display names, or “我” / “他” when names have not been set. Explicitly saving the default assistant name Morrow still counts as choosing that name. Display labels update without rewriting comment content.
+
+We also offers the assistant's display pronoun (`他`, `她`, or `ta`), defaulting to `他`. Chinese signatures use LXGW WenKai alongside Caveat for Latin characters. The preview note says “你不在的时候，我也有一些话想告诉你。”; customized notes remain untouched. Empty chats say “你来啦” and the composer chooses among “What's on your mind... ”, “A little thought...”, and “Begin anywhere...” on focus. The editable persona starts blank; only an unchanged legacy default is cleared on upgrade, and an internal neutral fallback remains available to the model.
+
+Home greetings and voice-lab example text omit a name with the default user label, and use the customized name after it is saved in We. Existing voice-lab drafts are not changed.
+
+Home greetings use neutral time-of-day phrases, with a custom user name appended only to short salutations (for example, `早上好。Alex`), not conversational questions or invitations. A greeting stays stable during the page session. On upgrade, only the exact legacy first preview note is replaced; edited notes are preserved, and deleting the preview does not recreate it on startup.
+
+Memory → We → 主页问候 supports time-of-day or random greeting pools, a live preview, and restoring defaults. Write one sentence per line (up to 30 lines per group, 200 characters per sentence). Blank groups use built-in defaults. Morning is 05:00–12:00, daytime 12:00–18:00, and evening 18:00–23:00; late night uses common greetings. Custom common lines supplement time-of-day pools, while random mode uses only the common pool. Insert `{你的名字}` where a custom sentence should show the user name; custom sentences do not append it automatically. Changes take effect after saving and remain stable during the page session. These are interface preferences, not persona instructions sent to the model.
+
+We → 在一起 saves a shared start date. The home counter uses local calendar days, counting the start date as day 1, rather than elapsed 24-hour periods. Until a date is saved, the legacy device-local start date is preserved. Weather starts without a city and makes no weather request until configured; clearing the city disables it. Upgrading clears the old seeded city once, while preserving other saved cities. We fields use inset paper styling, and touch devices hide textarea resize handles. Latin assistant names retain Caveat; Chinese names use smaller LXGW WenKai signatures. The persona mark uses the initial Latin letter, or M for Chinese names.
+
+We → 主页明信片 offers 留灯 (window light), 新叶 (a leaf), and 明日 (an envelope), with 明日 as the default. Choose a fixed design, customize each caption independently (up to 200 characters; blank restores the built-in caption), or hide the home card. Preview changes are drafts until saved. Preferences are shared across devices through the authenticated `/api/home-postcard` endpoint and the existing settings table; no migration is required. Illustrations are local SVG line art, with no external image requests. Captions are display-only, never model instructions. Diary comments use configured display names independently for each author, falling back to 我 / 他 only when that name is unset. Saving names updates already displayed comments.
+
+The diary label formerly displayed as `deep` is now `thoughts` in filters, composition, and existing entries. Internal `dive` storage values and `deep` tool arguments remain compatible; available tags and default selections are unchanged.
+
+We reuses the fetched-model bottom sheet for assistant pronouns, greeting rotation mode, and the together-date calendar, including year entry, month navigation, future-date disabling, Escape/close cancellation, and draft selection before saving. The postcard visibility checkbox uses the paper palette rather than the browser's blue default. Postcard faces display English names: Lamplight, New Leaf, and Tomorrow; the We options remain Chinese.
+
+If previously working requests suddenly return HTTP 401, the server no longer accepts the browser's signed login session; this is not a missing-data response. Keep `SECRET_KEY` stable across restarts and all workers. Changing it invalidates old sessions. Also avoid overlapping default `session` cookies from different Flask applications on the same hostname: browser cookies are not isolated by port. A configured key alone does not rule out cookie collisions. Do not bypass authentication to work around this.
+
+Warm yellow, mist green, and pink themes include the Afternoon, New Leaf, and A Letter watercolor backgrounds, at fixed 80% image-layer opacity for the app and 50% for chat. These internal defaults are not shown as interface instructions. Switching themes updates both defaults immediately. Night mode dims the built-in images without changing their opacity. App and chat uploads independently override their respective defaults and retain existing opacity settings; clearing an upload restores the current theme background. Background assets and generation prompts are documented in [the design notes](design/theme-backgrounds-v1.md).
+
+Conversation exports use both display names and label optional reasoning as `think...`. Existing database paths, backup format identifiers, and browser preference keys retain their legacy names for compatibility.
+
+We is a separate Memory section. The optional Ombre console is hidden from the public navigation; its implementation and existing integration data are retained.
+
+The checked-in `.env.example` documents weather, encrypted GitHub backups, Web Push identity, and model settings. Provider and MCP credentials can also be managed from the settings screen after login.

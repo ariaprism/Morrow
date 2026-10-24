@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 100 100" role="img" aria-label="Morrow: a soft cocoa cat with little sleepy eyes peeking from a cream letter">
+<defs><linearGradient id="clay" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#c1937e"/><stop offset="1" stop-color="#b27c6c"/></linearGradient></defs>
+<rect width="100" height="100" fill="url(#clay)"/>
+<path d="M75.5 65.8C82.7 66.6 87.5 59.1 83.9 55.4" fill="none" stroke="#795a49" stroke-width="4.2" stroke-linecap="round"/>
+<g transform="rotate(-4 51 36)">
+  <path d="M35.4 44.8C35.2 40.6 36.7 36.8 38.9 34.1C37.9 31.8 36.8 28.6 37 25.5C37 24.9 37.5 24.7 38.1 25.2C41 27.2 44.3 28.7 48 29.7C51 29.3 54.5 29.6 57.1 30C59.8 28.2 61.7 25 63.7 23.1C64.4 22.4 65.1 22.7 65.1 23.8C66 28.1 65.9 31.1 64.4 34.5C67 37.2 68 40.8 67.4 44.8Z" fill="#795a49"/>
+  <g fill="none" stroke="#fff2da" stroke-width=".86" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M45.7 37.2q1.3.55 2.7.25"/>
+    <path d="M58.3 37q1.3-.05 2.2-.8"/>
+  </g>
+  <path d="M53.2 37.8q.7-.2 1.2.2l-.8.9Z" fill="#fff2da"/>
+</g>
+<path d="M27.2 41.3C39 40.9 60 41.3 72.8 41.1C76.4 41.1 78 43 78 46.6L77.8 72.1C77.7 75.3 75.9 77 72.6 77.1C58 77.4 40 76.7 27.2 77C23.8 77 22 75.4 22 72.2L21.9 46.7C21.9 43 23.5 41.5 27.2 41.3Z" fill="#fff2da"/>
+<path d="M23 44C31 48 38 51.9 45.4 56C48.5 57.7 51.2 58.2 55 56.1C63.3 51.4 69.3 48.3 77 44.2" fill="none" stroke="#ad7764" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M50.2 60.4C51.2 63.7 52.4 65.1 55.8 66C52.4 67 51 68.4 49.9 71.7C48.9 68.4 47.5 67.1 44.2 66.2C47.6 65.2 49 63.7 50.2 60.4Z" fill="#b88370"/>
+</svg>

@@ -1,4 +1,4 @@
-"""Nook — 内置工具（Nook自己动手的"手"）。
+"""Morrow — 内置工具（Morrow自己动手的"手"）。
 
 每个工具 = 一个本地函数，直接读写同一个 SQLite。对模型来说，本地函数和
 未来的 MCP 工具是同一回事（共用一份工具注册表，再分别转换成 OpenAI 或
@@ -6,7 +6,7 @@ Anthropic 的 tools schema），只是后端把调用转给谁执行不同。
 
 **墙后面原则**：调用与结果都不进聊天气泡 —— chat 里只显示一层叙事动画
 （NARRATE 文案），完整账本进 tidy。但调用+结果**照常进模型上下文**
-（标准 tool-use 语义），所以下一轮Nook记得自己读到/做了什么。
+（标准 tool-use 语义），所以下一轮Morrow记得自己读到/做了什么。
 
 工具清单（信息密度低→高）：
   便签   read_note / write_note
@@ -55,17 +55,17 @@ def _setting(key, default=""):
 
 
 def set_alarm(args, session_id):
-    """Let Nook leave a one-shot future note without exposing chat identities."""
+    """Let Morrow leave a one-shot future note without exposing chat identities."""
     try:
         earliest = datetime.strptime(str(args.get("earliest_at") or "").strip(), "%Y-%m-%d %H:%M:%S")
         latest = datetime.strptime(str(args.get("latest_at") or "").strip(), "%Y-%m-%d %H:%M:%S")
     except ValueError:
-        return "（Nook闹钟：时间需要写成 YYYY-MM-DD HH:MM:SS。）"
+        return "（Morrow闹钟：时间需要写成 YYYY-MM-DD HH:MM:SS。）"
     now = datetime.utcnow() + timedelta(hours=8)
     if latest < earliest:
-        return "（Nook闹钟：最晚有效时间不能早于最早叫醒时间。）"
+        return "（Morrow闹钟：最晚有效时间不能早于最早叫醒时间。）"
     if latest <= now:
-        return "（Nook闹钟：这张纸条的有效时间已经过去了。）"
+        return "（Morrow闹钟：这张纸条的有效时间已经过去了。）"
     note = str(args.get("note") or "").strip()[:1000]
     conn = _connect()
     try:
@@ -75,7 +75,7 @@ def set_alarm(args, session_id):
         saved = {}
     if not saved.get("enabled") or int(saved.get("target_session_id") or 0) != int(session_id or 0):
         conn.close()
-        return "（Nook闹钟现在没有为这段对话打开。）"
+        return "（Morrow闹钟现在没有为这段对话打开。）"
     source = conn.execute(
         "SELECT id FROM messages WHERE session_id=? AND role='user' ORDER BY id DESC LIMIT 1",
         (session_id,),
@@ -95,7 +95,7 @@ def set_alarm(args, session_id):
 
 
 def cancel_alarm(args, session_id):
-    """Let Nook explicitly take back one of her own pending future notes."""
+    """Let Morrow explicitly take back one of her own pending future notes."""
     try:
         alarm_id = int(args.get("alarm_id"))
     except (TypeError, ValueError):
@@ -112,7 +112,7 @@ def cancel_alarm(args, session_id):
         conn.close()
         return "（取消闹钟：这张未来纸条已经响过、取消或正在醒来，不能再收回。）"
     conn.execute(
-        "UPDATE assistant_alarms SET status='cancelled',error='Nook自己收回了纸条',"
+        "UPDATE assistant_alarms SET status='cancelled',error='Morrow自己收回了纸条',"
         "updated_at=datetime('now','+8 hours') WHERE id=? AND session_id=? AND status='pending'",
         (alarm_id, session_id),
     )
@@ -252,7 +252,9 @@ def _daily(loc):
 def get_weather(args, _sid):
     if not QWEATHER_HOST or not QWEATHER_KEY:
         return "（天气还没配置，.env 缺 QWEATHER_HOST / QWEATHER_KEY。）"
-    city = (args.get("city") or "").strip() or _setting("weather_city", "正定")
+    city = (args.get("city") or "").strip() or _setting("weather_city", "")
+    if not city:
+        return "还没有设置天气城市，可以在偏好设置中填写，或在这次查询中指定城市。"
     when = (args.get("when") or "").strip()
     try:
         loc = _geo_id(city)
@@ -425,7 +427,7 @@ def delete_dynamic_memory(args, _sid):
 
 
 # ---------------------------------------------------------------------------
-# Cycle（周期只读；亲密记录只允许在指定 id 下留下Nook的留言）
+# Cycle（周期只读；亲密记录只允许在指定 id 下留下Morrow的留言）
 # ---------------------------------------------------------------------------
 def _local_today():
     return (datetime.utcnow() + timedelta(hours=8)).date()
@@ -865,7 +867,7 @@ def reply_kept(args, _sid):
 
 
 # ---------------------------------------------------------------------------
-# 留影（只给Nook看照片本身；来源对话、内部消息 id 与墙后内容不出墙）
+# 留影（只给Morrow看照片本身；来源对话、内部消息 id 与墙后内容不出墙）
 # ---------------------------------------------------------------------------
 def _keepsake_error(message):
     return f"（留影：{message}）"
@@ -1063,8 +1065,8 @@ def reply_keepsake(args, _sid):
                        "author": "E", "created_at": row["created_at"]})
 
 
-def _music_cookie():
-    return str(_setting("music_kugou_cookie", "") or os.environ.get("METING_KUGOU_COOKIE", "")).strip()
+def _music_cookie(platform=None):
+    return music_service.connection_settings(_setting, platform)["cookie"]
 
 
 def _music_song(value):
@@ -1106,7 +1108,7 @@ def search_music(args, _sid):
     except (TypeError, ValueError):
         limit = 8
     try:
-        songs = music_service.search(query, cookie=_music_cookie(), limit=limit)
+        songs = music_service.search(query, limit=limit, **music_service.connection_settings(_setting))
     except music_service.MusicError as exc:
         return f"（一起听：搜歌失败：{exc}）"
     return _kept_json({"query": query, "songs": songs})
@@ -1148,7 +1150,7 @@ def read_music_lyrics(args, _sid):
     if not song_id:
         return "（一起听：没有给歌曲 id。）"
     try:
-        data = music_service.lyrics(song_id, cookie=_music_cookie())
+        data = music_service.lyrics(song_id, cookie=_music_cookie(music_service.split_song_id(song_id)[0]))
     except music_service.MusicError as exc:
         return f"（一起听：歌词读取失败：{exc}）"
     lyric = str(data.get("lyric") or "").strip()[:16000]
@@ -1325,7 +1327,7 @@ _REGISTRY = {
     "set_alarm": (set_alarm, "在未来夹了一张纸条", {
         "description": (
             "给未来的自己留一张一次性纸条，到时间后自然地回来对你说话。它不只是功能提醒："
-            "也可以因为惦记、关心或想稍后问问她在做什么而设置。不要传对话或消息编号，Nook 会自动绑定。"
+            "也可以因为惦记、关心或想稍后问问她在做什么而设置。不要传对话或消息编号，Morrow 会自动绑定。"
         ),
         "parameters": {"type": "object", "properties": {
             "earliest_at": {"type": "string", "description": "最早叫醒时间，北京时间 YYYY-MM-DD HH:MM:SS"},
@@ -1420,15 +1422,15 @@ _REGISTRY = {
         "parameters": {"type": "object", "properties": {}},
     }),
     "get_intimacy_log": (get_intimacy_log, "悄悄翻那几页", {
-        "description": "只读查看最近的亲密记录。每条带稳定 id、日期、时间、碎碎念以及已有的她的留言。",
+        "description": "只读查看最近的亲密记录。每条带稳定 id、日期、时间、碎碎念以及已有的助手的留言。",
         "parameters": {"type": "object", "properties": {
             "n": {"type": "integer", "minimum": 1, "maximum": 10, "description": "返回最近几条，默认 5，最多 10"}}},
     }),
     "reply_to_intimacy_log": (reply_to_intimacy_log, "在那一页留了句话", {
-        "description": "在指定亲密记录下留下她的留言。需要先从 get_intimacy_log 取得 record_id；已有留言时不会覆盖。",
+        "description": "在指定亲密记录下留下助手的留言。需要先从 get_intimacy_log 取得 record_id；已有留言时不会覆盖。",
         "parameters": {"type": "object", "properties": {
             "record_id": {"type": "integer", "description": "亲密记录的稳定 id"},
-            "text": {"type": "string", "maxLength": 2000, "description": "她想留下的话"}},
+            "text": {"type": "string", "maxLength": 2000, "description": "助手想留下的话"}},
             "required": ["record_id", "text"]},
     }),
     "browse_kept": (browse_kept, "翻 kept 的目录", {
@@ -1446,7 +1448,7 @@ _REGISTRY = {
             "tag": {"type": "string", "enum": ["light", "deep", "anchor", "favorite"],
                     "description": "可选筛选；favorite 是你亲手收藏的日记，不是可写标签"},
             "author": {"type": "string", "enum": ["A", "E"],
-                       "description": "可选作者筛选；A 是你，E 是Nook"}}},
+                       "description": "可选作者筛选；A 是你，E 是Morrow"}}},
     }),
     "read_kept": (read_kept, "展开了一页 kept", {
         "description": (
@@ -1464,7 +1466,7 @@ _REGISTRY = {
             "required": ["date"]},
     }),
     "write_kept": (write_kept, "在 kept 里落下一页", {
-        "description": "以 E（Nook）身份写一篇 kept 日记。tag 不填时默认 deep；不能冒充 A。",
+        "description": "以 E（Morrow）身份写一篇 kept 日记。tag 不填时默认 deep；不能冒充 A。",
         "parameters": {"type": "object", "properties": {
             "content": {"type": "string", "maxLength": 10000, "description": "日记正文"},
             "tag": {"type": "string", "enum": ["light", "deep", "anchor"],
@@ -1472,7 +1474,7 @@ _REGISTRY = {
             "required": ["content"]},
     }),
     "reply_kept": (reply_kept, "在 kept 那页留了句话", {
-        "description": "以 E（Nook）身份在指定日记下留言。需要先取得日记 id；同一页可以留下多条留言。",
+        "description": "以 E（Morrow）身份在指定日记下留言。需要先取得日记 id；同一页可以留下多条留言。",
         "parameters": {"type": "object", "properties": {
             "id": {"type": "integer", "description": "日记的稳定 id"},
             "content": {"type": "string", "maxLength": 2000, "description": "留言内容"}},
@@ -1517,7 +1519,7 @@ _REGISTRY = {
     }),
     "reply_keepsake": (reply_keepsake, "在留影旁写下一句话", {
         "description": (
-            "以 E（Nook）身份给指定留影新增留言。需要先取得留影 id；"
+            "以 E（Morrow）身份给指定留影新增留言。需要先取得留影 id；"
             "不能修改照片背面题注、珍藏状态、照片或旧留言。"
         ),
         "parameters": {"type": "object", "properties": {
@@ -1527,7 +1529,7 @@ _REGISTRY = {
     }),
     "search_music": (search_music, "在唱片架上找一首歌", {
         "description": (
-            "按歌名、歌手或关键词搜索酷狗曲库，返回可供 choose_music 和 read_music_lyrics 使用的稳定歌曲 id。"
+            "按歌名、歌手或关键词搜索当前连接账号的音乐曲库，返回可供 choose_music 和 read_music_lyrics 使用的稳定歌曲 id。"
             "只在真的想点歌、回应你的点歌请求或自然需要找歌时调用，不要每轮固定搜索。"
         ),
         "parameters": {"type": "object", "properties": {
@@ -1570,8 +1572,8 @@ _REGISTRY = {
     }),
     "music_song_notes": (music_song_notes, "翻开这首歌夹着的留言", {
         "description": (
-            "读取或以 E（Nook）身份写一首 our songs 收藏歌曲的留言。read 可查看双方旧留言；"
-            "write 只新增Nook自己的话，不能修改或删除旧留言，且歌曲必须已经收藏。"
+            "读取或以 E（Morrow）身份写一首 our songs 收藏歌曲的留言。read 可查看双方旧留言；"
+            "write 只新增Morrow自己的话，不能修改或删除旧留言，且歌曲必须已经收藏。"
         ),
         "parameters": {"type": "object", "properties": {
             "action": {"type": "string", "enum": ["read", "write"], "description": "读取或新增留言"},
@@ -1602,7 +1604,7 @@ _REGISTRY = {
             "tag": {"type": "string", "enum": ["light", "deep", "anchor", "favorite"],
                     "description": "可选筛选；favorite 是你亲手收藏的日记，不是可写标签"},
             "author": {"type": "string", "enum": ["A", "E"],
-                       "description": "可选作者筛选；A 是你，E 是Nook"}},
+                       "description": "可选作者筛选；A 是你，E 是Morrow"}},
             "required": ["keyword"]},
     }),
 }
@@ -1741,12 +1743,22 @@ def _set_mcp_status(server_id, ok, error=""):
 
 def openai_tools(mcp_server_ids=None):
     """OpenAI 兼容的 tools 字段（中转站/DeepSeek 都吃这个）。"""
+    import identity
+    names = identity.get_identity(db_path=DB_PATH)
+    def display(value):
+        if isinstance(value, str):
+            return value.replace("A 是你，E 是Morrow", "A 是用户，E 是助手").replace("Morrow", names["assistant_name"]).replace("助手的留言", names["assistant_pronoun"]+"的留言").replace("助手想留下的话", names["assistant_pronoun"]+"想留下的话")
+        if isinstance(value, dict):
+            return {key: display(item) for key, item in value.items()}
+        if isinstance(value, list):
+            return [display(item) for item in value]
+        return value
     out = []
     for name, (_fn, _narr, spec) in _REGISTRY.items():
         out.append({"type": "function", "function": {
             "name": name,
-            "description": spec["description"],
-            "parameters": spec["parameters"],
+            "description": display(spec["description"]),
+            "parameters": display(spec["parameters"]),
         }})
     out.extend(_openai_mcp_tools(mcp_server_ids))
     return out
@@ -1756,10 +1768,10 @@ def narrate(name):
     if name.startswith("mcp_"):
         server, _tool = _find_mcp_tool(name)
         if server:
-            return server["narrate"] or f"Nook正在请 {server['name']} 帮忙"
-        return "Nook正在请外面的朋友帮忙"
+            return server["narrate"] or f"Morrow正在请 {server['name']} 帮忙"
+        return "Morrow正在请外面的朋友帮忙"
     item = _REGISTRY.get(name)
-    return item[1] if item else "Nook在忙活着"
+    return item[1] if item else "Morrow在忙活着"
 
 
 def _failed_text(value):

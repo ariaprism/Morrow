@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Morrow · 门与光 设计预览</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --surface:#faf5ed; --paper:#fbf6ec; --paper-field:#f6efe3;
+    --ink:#3d3529; --muted:#6f6452;
+    --accent:#c49a6c; --accent-strong:#a8744a; --accent-soft:rgba(196,154,108,.15);
+    --danger:#c47a6c; --border:rgba(180,160,130,.26);
+    --shadow:rgba(120,100,75,.14);
+    --light-core:#f6ddab; --light-mid:rgba(240,205,140,.55); --light-fade:rgba(240,205,140,0);
+    --ease:cubic-bezier(.22,.72,.28,1);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+    background:#e9e0cf;font-family:"Noto Serif SC","Songti SC",serif;color:var(--ink);
+    padding:28px 12px;
+  }
+
+  /* ---------- 手机框 ---------- */
+  .phone{
+    position:relative;width:390px;height:min(760px,86vh);border-radius:44px;overflow:hidden;
+    background:var(--surface);box-shadow:0 30px 80px rgba(90,70,45,.25),0 0 0 1px rgba(120,100,70,.18),inset 0 0 0 1px rgba(255,255,255,.5);
+  }
+  .stage{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;overflow:hidden}
+
+  /* ---------- 门场景 ---------- */
+  .door-scene{position:relative;width:240px;height:300px}
+  .door-scene svg{width:100%;height:100%;overflow:visible}
+  .line{fill:none;stroke:var(--accent-strong);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+  .line-soft{fill:none;stroke:var(--accent);stroke-width:1.1;stroke-linecap:round;opacity:.7}
+
+  /* 门扇（可开合，铰链在左） */
+  .door-panel{transform-origin:70px 232px;transition:transform 1.1s var(--ease)}
+  .door-fill{fill:var(--paper);stroke:var(--accent-strong);stroke-width:1.5;stroke-linejoin:round}
+
+  /* 门缝里的光 */
+  .crack-light{transition:opacity .8s ease;filter:blur(1.2px)}
+  .floor-light{transform-origin:144px 232px;transition:transform 1.2s var(--ease),opacity .8s ease;filter:blur(2.5px)}
+  .room-glow{transition:opacity 1s ease}
+
+  /* 呼吸 */
+  .breathing .floor-light{animation:lightBreath 4.6s ease-in-out infinite}
+  .breathing .crack-light{animation:crackBreath 4.6s ease-in-out infinite}
+  @keyframes lightBreath{0%,100%{opacity:.75}50%{opacity:1}}
+  @keyframes crackBreath{0%,100%{opacity:.85}50%{opacity:1}}
+
+  /* 画线入场（开屏） */
+  .draw .line,.draw .line-soft{stroke-dasharray:600;stroke-dashoffset:600;animation:drawIn 1.5s var(--ease) forwards}
+  .draw .draw-d1{animation-delay:.15s}.draw .draw-d2{animation-delay:.5s}.draw .draw-d3{animation-delay:.8s}
+  @keyframes drawIn{to{stroke-dashoffset:0}}
+
+  /* 场景状态 */
+  .door-scene .floor-light{transform:scaleX(.06);opacity:0}
+  .door-scene .crack-light{opacity:0}
+  .door-scene .room-glow{opacity:0}
+
+  .lit .floor-light{transform:scaleX(1);opacity:.9}
+  .lit .crack-light{opacity:1}
+  .lit .room-glow{opacity:1}
+
+  .ajar .door-panel{transform:scaleX(.86) skewY(-1.2deg)}
+  .open .door-panel{transform:scaleX(.18) skewY(-4deg)}
+  .closed .door-panel{transform:scaleX(1.02)}
+
+  /* 成功：光漫出来 */
+  .flood{position:absolute;left:50%;top:46%;width:40px;height:40px;border-radius:50%;
+    background:radial-gradient(circle,#fdf3dc 0%,#f8e7c2 34%,rgba(248,231,194,.55) 58%,transparent 75%);
+    transform:translate(-50%,-50%) scale(0);pointer-events:none;opacity:0}
+  .flood.go{animation:floodOut 1.5s var(--ease) forwards}
+  @keyframes floodOut{0%{opacity:1;transform:translate(-50%,-50%) scale(0)}
+    100%{opacity:1;transform:translate(-50%,-50%) scale(30)}}
+
+  /* ---------- 文案 ---------- */
+  .copy{margin-top:26px;text-align:center;min-height:58px;display:flex;flex-direction:column;align-items:center;gap:9px}
+  .copy .zh{font-family:"LXGW WenKai Screen","Noto Serif SC","Songti SC",serif;font-size:15px;letter-spacing:.1em;color:var(--muted);
+    opacity:0;transform:translateY(6px);transition:opacity .5s ease,transform .5s var(--ease)}
+  .copy .en{font:italic 13px "EB Garamond",Georgia,serif;letter-spacing:.06em;color:var(--muted);
+    opacity:0;transition:opacity .5s ease .1s}
+  .copy .mono{font:9px "JetBrains Mono",ui-monospace,monospace;letter-spacing:.22em;color:var(--muted);opacity:0;transition:opacity .6s ease .15s;text-transform:uppercase}
+  .copy.show .zh{opacity:.9;transform:none}
+  .copy.show .en{opacity:.75}
+  .copy.show .mono{opacity:.55}
+
+  /* ---------- 密码 ---------- */
+  .pw-zone{width:min(300px,100%);margin-top:20px;display:flex;flex-direction:column;align-items:center;gap:10px;
+    opacity:0;transform:translateY(10px);pointer-events:none;transition:opacity .4s ease,transform .45s var(--ease)}
+  .pw-zone.on{opacity:1;transform:none;pointer-events:auto}
+  .pw-row{position:relative;width:100%;height:48px}
+  .pw-row input{width:100%;height:100%;background:var(--paper-field);border:1px solid transparent;
+    box-shadow:inset 0 1px 6px var(--shadow);border-radius:24px;padding:0 52px 0 19px;
+    font-size:15px;color:var(--ink);font-family:inherit;transition:border-color .2s,box-shadow .2s}
+  .pw-row input::placeholder{color:var(--muted);opacity:.66}
+  .pw-row input:focus{outline:none;border-color:var(--border);box-shadow:inset 0 1px 7px var(--shadow),0 0 0 1px var(--accent-soft)}
+  .pw-btn{position:absolute;right:6px;top:6px;width:36px;height:36px;border:0;border-radius:50%;
+    display:grid;place-items:center;background:transparent;color:var(--accent-strong);cursor:pointer;transition:background .2s,transform .18s}
+  .pw-btn:active{transform:scale(.91);background:var(--accent-soft)}
+  .pw-btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.45;stroke-linecap:round;stroke-linejoin:round}
+  .pw-err{color:var(--danger);font-size:12px;height:16px;opacity:0;transition:opacity .2s}
+  .pw-err:not(:empty){opacity:.9}
+  .shake{animation:no .34s ease}
+  @keyframes no{0%,100%{transform:translateX(0)}30%{transform:translateX(-6px)}65%{transform:translateX(5px)}}
+
+  /* 重试（离线） */
+  .ghost-btn{margin-top:8px;padding:10px 26px;border:1px solid var(--border);border-radius:22px;background:transparent;
+    color:var(--muted);font-family:inherit;font-size:13px;letter-spacing:.08em;cursor:pointer;transition:background .2s,color .2s}
+  .ghost-btn:hover{background:var(--accent-soft);color:var(--accent-strong)}
+
+  /* 到家 */
+  .home-mark{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
+    opacity:0;pointer-events:none;transition:opacity .7s ease .35s;z-index:5}
+  .home-mark.on{opacity:1}
+  .home-mark .big{font:italic 30px "EB Garamond",Georgia,serif;color:#8a6b45;letter-spacing:.03em}
+  .home-mark .small{font-family:"LXGW WenKai Screen","Noto Serif SC",serif;font-size:13px;letter-spacing:.16em;color:#a68d6d}
+  .home-mark .mono{font:9px ui-monospace,monospace;letter-spacing:.26em;color:#b39a78;text-transform:uppercase}
+
+  /* ---------- 预览控制台 ---------- */
+  .console{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;max-width:430px}
+  .console button{padding:9px 16px;border:1px solid rgba(120,100,70,.3);border-radius:20px;background:rgba(255,252,245,.7);
+    color:#6b5b44;font-family:inherit;font-size:12.5px;letter-spacing:.05em;cursor:pointer;transition:all .2s}
+  .console button:hover{background:#fbf4e6;border-color:var(--accent)}
+  .console button.active{background:var(--accent);color:#fff8ee;border-color:var(--accent)}
+  .hint{font-size:11px;color:#97876d;letter-spacing:.04em}
+  .hint code{background:rgba(255,252,245,.8);padding:1px 7px;border-radius:8px;border:1px solid rgba(120,100,70,.2)}
+
+  @media (prefers-reduced-motion:reduce){
+    *{animation-duration:.01s!important;transition-duration:.01s!important}
+  }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="stage" id="stage">
+
+    <div class="door-scene" id="scene">
+      <svg viewBox="0 0 220 270" aria-hidden="true">
+        <defs>
+          <linearGradient id="gFloor" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#f2d49a" stop-opacity=".85"/>
+            <stop offset="1" stop-color="#f2d49a" stop-opacity="0"/>
+          </linearGradient>
+          <linearGradient id="gCrack" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="#f8e3b6" stop-opacity=".95"/>
+            <stop offset="1" stop-color="#f8e3b6" stop-opacity=".35"/>
+          </linearGradient>
+          <radialGradient id="gRoom" cx=".5" cy=".55" r=".65">
+            <stop offset="0" stop-color="#f6ddab" stop-opacity=".5"/>
+            <stop offset="1" stop-color="#f6ddab" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+
+        <!-- 房间环境光 -->
+        <ellipse class="room-glow" cx="110" cy="150" rx="120" ry="130" fill="url(#gRoom)"/>
+
+        <!-- 地面光楔 -->
+        <polygon class="floor-light" points="128,232 152,232 200,262 92,262" fill="url(#gFloor)"/>
+
+        <!-- 门洞内的光 -->
+        <path class="crack-light" d="M126 232 L126 108 C126 76 140 60 148 58 C154 66 158 80 158 102 L158 232 Z" fill="url(#gCrack)"/>
+
+        <!-- 地面线 -->
+        <path class="line-soft draw-d3" d="M26 232 L194 232"/>
+
+        <!-- 门框（拱形） -->
+        <path class="line draw-d1" d="M60 232 L60 102 C60 62 86 42 110 42 C134 42 160 62 160 102 L160 232"/>
+
+        <!-- 门楣小装饰：一颗星点 -->
+        <path class="line-soft draw-d2" d="M110 26 l2.6 5.4 5.4 2.6 -5.4 2.6 -2.6 5.4 -2.6 -5.4 -5.4 -2.6 5.4 -2.6 Z"/>
+
+        <!-- 门扇（微掩，铰链在左） -->
+        <g class="door-panel">
+          <path class="door-fill" d="M70 232 L70 104 C70 68 92 52 110 52 L110 52 C122 52 140 62 146 78 L146 226 C146 229 144 232 141 232 Z"/>
+          <path class="line-soft" d="M82 218 L82 110 C82 82 96 66 108 64"/>
+          <circle class="line" cx="136" cy="160" r="3.2"/>
+        </g>
+      </svg>
+      <div class="flood" id="flood"></div>
+    </div>
+
+    <div class="copy" id="copy">
+      <div class="zh" id="copyZh"></div>
+      <div class="en" id="copyEn"></div>
+      <div class="mono" id="copyMono"></div>
+    </div>
+
+    <div class="pw-zone" id="pwZone">
+      <div class="pw-row">
+        <input id="pw" type="password" placeholder="进来的暗号" autocomplete="off">
+        <button class="pw-btn" id="pwBtn" aria-label="进来">
+          <svg viewBox="0 0 20 20"><path d="M4 10h11M11 6l4 4-4 4"/></svg>
+        </button>
+      </div>
+      <div class="pw-err" id="pwErr"></div>
+    </div>
+
+    <div class="pw-zone" id="retryZone">
+      <button class="ghost-btn" id="retryBtn">再敲敲门</button>
+    </div>
+
+    <div class="home-mark" id="homeMark">
+      <div class="big">Welcome home</div>
+      <div class="small">明天见，也在今天见</div>
+      <div class="mono">Morrow · a place for tomorrow</div>
+    </div>
+
+  </div>
+</div>
+
+<div class="console">
+  <button data-state="boot" class="active">① 开屏</button>
+  <button data-state="login">② 密码页</button>
+  <button data-state="refresh">③ 刷新（轻）</button>
+  <button data-state="offline">④ 离线</button>
+  <button id="replay">↻ 重播</button>
+</div>
+<div class="hint">密码页输入 <code>morrow</code> 看开门动画；输入别的看错误反馈</div>
+
+<script>
+const stage=document.getElementById('stage'),scene=document.getElementById('scene'),
+      copy=document.getElementById('copy'),pwZone=document.getElementById('pwZone'),
+      retryZone=document.getElementById('retryZone'),flood=document.getElementById('flood'),
+      homeMark=document.getElementById('homeMark'),pw=document.getElementById('pw'),
+      pwErr=document.getElementById('pwErr');
+const zh=document.getElementById('copyZh'),en=document.getElementById('copyEn'),mono=document.getElementById('copyMono');
+let timers=[];
+function later(fn,ms){timers.push(setTimeout(fn,ms))}
+function clearTimers(){timers.forEach(clearTimeout);timers=[]}
+
+function reset(){
+  clearTimers();
+  scene.className='door-scene';
+  copy.classList.remove('show');pwZone.classList.remove('on');retryZone.classList.remove('on');
+  flood.classList.remove('go');homeMark.classList.remove('on');
+  pwErr.textContent='';pw.value='';
+  zh.textContent='';en.textContent='';mono.textContent='';
+  // 重触发 draw 动画
+  void scene.offsetWidth;
+}
+function setCopy(a,b,c){zh.textContent=a;en.textContent=b;mono.textContent=c||'';copy.classList.add('show')}
+
+const states={
+  boot(){
+    reset();
+    scene.classList.add('draw','closed');
+    later(()=>{scene.classList.add('ajar')},1400);
+    later(()=>{scene.classList.add('lit','breathing')},1900);
+    later(()=>setCopy('家在醒来…','the house is waking up','Morrow'),2100);
+    later(()=>{states.login();markActive('login')},4600);
+  },
+  login(){
+    reset();
+    scene.classList.add('ajar','lit','breathing');
+    later(()=>setCopy('回来啦','knock knock · the door is listening','Morrow'),350);
+    later(()=>{pwZone.classList.add('on');pw.focus()},600);
+  },
+  refresh(){
+    reset();
+    scene.classList.add('open','lit');
+    later(()=>setCopy('回来了？','right back at the door','Morrow'),300);
+    later(()=>{flood.classList.add('go');homeMark.classList.add('on')},1500);
+  },
+  offline(){
+    reset();
+    scene.classList.add('closed');
+    later(()=>setCopy('小窝睡着了，没人应声','no answer behind the door','Morrow'),400);
+    later(()=>retryZone.classList.add('on'),700);
+  },
+  success(){
+    scene.classList.remove('breathing');
+    scene.classList.add('open');
+    pwZone.classList.remove('on');
+    setCopy('门开了','the door opens','');
+    later(()=>{flood.classList.add('go')},650);
+    later(()=>{homeMark.classList.add('on')},900);
+  }
+};
+
+function markActive(s){document.querySelectorAll('.console [data-state]').forEach(b=>b.classList.toggle('active',b.dataset.state===s))}
+document.querySelectorAll('.console [data-state]').forEach(b=>b.onclick=()=>{markActive(b.dataset.state);states[b.dataset.state]()});
+document.getElementById('replay').onclick=()=>{const s=document.querySelector('.console [data-state].active')?.dataset.state||'boot';states[s]()};
+
+function tryLogin(){
+  if(pw.value==='morrow'){states.success()}
+  else{
+    pwErr.textContent='暗号不对～';
+    scene.classList.remove('shake');pwZone.classList.remove('shake');
+    void scene.offsetWidth;
+    scene.classList.add('shake');pwZone.classList.add('shake');
+  }
+}
+document.getElementById('pwBtn').onclick=tryLogin;
+pw.addEventListener('keydown',e=>{if(e.key==='Enter')tryLogin()});
+document.getElementById('retryBtn').onclick=()=>{states.boot();markActive('boot')};
+
+states.boot();
+</script>
+</body>
+</html>

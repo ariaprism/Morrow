@@ -1,4 +1,4 @@
-"""Nook — Flask API、SQLite schema/migration 与单文件 SPA 入口。
+"""Morrow — Flask API、SQLite schema/migration 与单文件 SPA 入口。
 
 聊天、记忆、小窝、工具账本、供应商/MCP、用量、备份/导出、对话压缩和
 Supabase 镜像等服务端能力都从这里接入；模型编排本身在 chat_engine.py。
@@ -21,6 +21,10 @@ from pathlib import Path
 from urllib.parse import quote
 
 import requests
+import identity
+import greeting_settings
+import postcard_settings
+import together_settings
 from dotenv import load_dotenv
 from flask import (
     Flask,
@@ -68,8 +72,8 @@ from media_utils import detect_image_mime, image_extension  # noqa: E402
 DB_PATH = chat_engine.DB_PATH
 DATA_DIR = os.path.dirname(DB_PATH) or "."
 UPLOAD_DIR = os.path.join(DATA_DIR, "uploads")
-PORT = int(os.environ.get("PORT", "5050"))
-DEBUG = os.environ.get("FLASK_DEBUG", "1").strip().lower() not in {"0", "false", "off"}
+PORT = int(os.environ.get("PORT", "5151"))
+DEBUG = os.environ.get("FLASK_DEBUG", "0").strip().lower() not in {"0", "false", "off"}
 AUTH_PASSWORD = os.environ.get("AUTH_PASSWORD", "").strip()
 SECRET_KEY = os.environ.get("SECRET_KEY", "").strip() or os.urandom(32).hex()
 # 和风天气（专属 host + key，放 .env）。
@@ -82,7 +86,7 @@ app.config["MAX_CONTENT_LENGTH"] = 1024 * 1024 * 1024
 
 
 def _release_info():
-    """Return the quiet, deployment-generated build identity shown in settings."""
+    """Return the release version and optional deployment commit for diagnostics."""
     root = Path(__file__).resolve().parent
 
     def read_value(name, env_name=""):
@@ -93,7 +97,7 @@ def _release_info():
         except OSError:
             return ""
 
-    version = read_value("nook-release-version", "NOOK_RELEASE_VERSION") or "development"
+    version = read_value("VERSION") or "v0.1.0"
     sha = read_value("nook-release-sha", "NOOK_RELEASE_SHA")
     return {"version": version[:80], "commit": sha[:40], "commit_short": sha[:7]}
 
@@ -300,7 +304,7 @@ CREATE TABLE IF NOT EXISTS conversation_summary_versions (
 CREATE INDEX IF NOT EXISTS idx_summary_versions_session
 ON conversation_summary_versions(session_id, id DESC);
 
--- Nook的小房间活动。触发消息与完整工具过程不进入 chat；这里只保存足迹、余温和账本。
+-- Morrow的小房间活动。触发消息与完整工具过程不进入 chat；这里只保存足迹、余温和账本。
 CREATE TABLE IF NOT EXISTS night_runs (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     session_id    INTEGER NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
@@ -510,7 +514,7 @@ ON push_notification_events(unread, session_id, id);
 CREATE INDEX IF NOT EXISTS idx_push_notification_events_message
 ON push_notification_events(message_id, id);
 
--- 待办：Nook可以帮着记，完成后划线归入已完成。
+-- 待办：Morrow可以帮着记，完成后划线归入已完成。
 CREATE TABLE IF NOT EXISTS todos (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     text       TEXT    NOT NULL,
@@ -548,7 +552,7 @@ CREATE TABLE IF NOT EXISTS cycle_private_notes (
     updated_at TEXT NOT NULL DEFAULT (datetime('now', '+8 hours'))
 );
 
--- kept 日记：正文与留言分开保存，作者保留给未来的Nook墙后写入。
+-- kept 日记：正文与留言分开保存，作者保留给未来的Morrow墙后写入。
 CREATE TABLE IF NOT EXISTS diary_entries (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     author TEXT NOT NULL CHECK (author IN ('user', 'assistant')),
@@ -571,7 +575,7 @@ CREATE TABLE IF NOT EXISTS diary_comments (
 );
 CREATE INDEX IF NOT EXISTS idx_diary_comments_entry ON diary_comments(entry_id, created_at, id);
 
--- Nook逐页的阅读进度。浏览目录不改变它，只有读开正文才更新。
+-- Morrow逐页的阅读进度。浏览目录不改变它，只有读开正文才更新。
 CREATE TABLE IF NOT EXISTS kept_read_state (
     entry_id INTEGER PRIMARY KEY REFERENCES diary_entries(id) ON DELETE CASCADE,
     body_seen_updated_at TEXT,
@@ -614,7 +618,7 @@ CREATE TABLE IF NOT EXISTS mcp_servers (
     updated_at TEXT    NOT NULL DEFAULT (datetime('now', '+8 hours'))
 );
 
--- Ombre 的轻量召回卡镜像。完整正文仍在 Ombre；这里只供 Nook 墙后匹配。
+-- Ombre 的轻量召回卡镜像。完整正文仍在 Ombre；这里只供 Morrow 墙后匹配。
 CREATE TABLE IF NOT EXISTS ombre_recall_cards (
     server_id INTEGER NOT NULL REFERENCES mcp_servers(id) ON DELETE CASCADE,
     bucket_id TEXT NOT NULL,
@@ -1028,20 +1032,37 @@ def init_db():
     if row is None:
         conn.execute(
             "INSERT INTO persona (id, content) VALUES (1, ?)",
-            (chat_engine.DEFAULT_PERSONA,),
+            ("",),
         )
-    # Seed a first sticky note so 小窝 has something warm to show.
-    if conn.execute("SELECT 1 FROM notes LIMIT 1").fetchone() is None:
+    # One-time preview setup: upgrade only the exact legacy first note.
+    # A deleted preview must not be recreated on the next startup.
+    if conn.execute("SELECT 1 FROM settings WHERE key='note_preview_initialized'").fetchone() is None:
+        preview = "你不在的时候，我也有一些话想告诉你。"
         conn.execute(
-            "INSERT INTO notes (content) VALUES (?)",
-            ("今天也要好好吃饭呀，等你回来跟我说说话。🐟",),
+            "UPDATE notes SET content=? WHERE id=(SELECT MIN(id) FROM notes) AND content=?",
+            (preview, "今天也要好好吃饭呀，等你回来跟我说说话。🐟"),
         )
+        if conn.execute("SELECT 1 FROM notes LIMIT 1").fetchone() is None:
+            conn.execute("INSERT INTO notes (content) VALUES (?)", (preview,))
+        conn.execute("INSERT INTO settings(key,value) VALUES ('note_preview_initialized','1')")
+    if conn.execute("SELECT 1 FROM settings WHERE key='note_preview_copy_v2'").fetchone() is None:
+        conn.execute(
+            "UPDATE notes SET content=? WHERE id=(SELECT MIN(id) FROM notes) AND content=?",
+            ("你不在的时候，我也有一些话想告诉你。", "这里可以留一句话，等下次回来再看。"),
+        )
+        conn.execute("INSERT INTO settings(key,value) VALUES ('note_preview_copy_v2','1')")
+    if conn.execute("SELECT 1 FROM settings WHERE key='persona_empty_default_v1'").fetchone() is None:
+        conn.execute("UPDATE persona SET content='' WHERE id=1 AND content=?", (chat_engine.DEFAULT_PERSONA,))
+        conn.execute("INSERT INTO settings(key,value) VALUES ('persona_empty_default_v1','1')")
     # Seed default weather city (changeable in 设置).
     if conn.execute("SELECT 1 FROM settings WHERE key='weather_city'").fetchone() is None:
         conn.execute(
             "INSERT INTO settings (key, value) VALUES ('weather_city', ?)",
-            ("正定",),
+            ("",),
         )
+    if conn.execute("SELECT 1 FROM settings WHERE key='weather_blank_default_v1'").fetchone() is None:
+        conn.execute("UPDATE settings SET value='' WHERE key='weather_city' AND value='正定'")
+        conn.execute("INSERT INTO settings(key,value) VALUES ('weather_blank_default_v1','1')")
     # 旧版曾允许把带模板占位符的通用提示词直接保存下来，但压缩引擎并
     # 不会替换这些占位符。只迁移这类可识别的旧模板，保留用户之后手写的内容。
     import compression_engine
@@ -1275,7 +1296,7 @@ def record_visit():
 
     The home greeting uses this to notice a return after more than 48 hours.
     Keeping the timestamp in server settings makes the behaviour survive browser
-    refreshes and work consistently across the two devices that share Nook.
+    refreshes and work consistently across the two devices that share Morrow.
     """
     previous = get_setting("last_visit_ms", "").strip()
     try:
@@ -1320,7 +1341,7 @@ def export_backup():
     os.close(fd)
     try:
         backup_service.create_backup(get_db(), UPLOAD_DIR, path, client_settings)
-        filename = f"nook-backup-{datetime.now().strftime('%Y-%m-%d-%H%M')}.zip"
+        filename = f"morrow-backup-{datetime.now().strftime('%Y-%m-%d-%H%M')}.zip"
         size = os.path.getsize(path)
 
         def stream_archive():
@@ -1396,7 +1417,7 @@ def supabase_status():
     out = {
         "configured": supabase_sync.configured(),
         "workspace_id": workspace_id,
-        "project": "Nook",
+        "project": "Morrow",
         "last_synced_at": get_setting("supabase_last_synced_at", ""),
         "last_counts": {},
     }
@@ -1558,7 +1579,7 @@ def export_chat_markdown():
                 if os.path.exists(path):
                     os.remove(path)
 
-        ascii_name = f"nook-chat-{session_ids[0]}{result['extension']}" if len(session_ids) == 1 else result["filename"]
+        ascii_name = f"morrow-chat-{session_ids[0]}{result['extension']}" if len(session_ids) == 1 else result["filename"]
         return Response(
             stream_export(),
             mimetype=result["mimetype"],
@@ -1855,7 +1876,7 @@ def _github_backup_scheduler_tick(now=None):
         return None
     last_activity = int(get_setting("last_user_activity_ms", "0") or 0)
     idle_until = datetime.fromtimestamp(last_activity / 1000) + timedelta(minutes=GITHUB_BACKUP_IDLE_MINUTES)
-    busy_reason = "" if idle_until <= now else "Nook 最近仍有人使用"
+    busy_reason = "" if idle_until <= now else "Morrow 最近仍有人使用"
     busy_reason = busy_reason or _github_backup_busy_reason(db)
     if busy_reason:
         next_check = min(cutoff, now + timedelta(minutes=GITHUB_BACKUP_RECHECK_MINUTES))
@@ -2871,7 +2892,7 @@ def _music_context_prompt(raw):
         if text:
             lyric_lines.append(f"{relation_copy[item['relation']]}：{text}")
     prompt = (
-        "【一起听歌】你主动打开了‘和Nook一起听’，所以你能自然感知播放器此刻的状态。"
+        "【一起听歌】你主动打开了‘和Morrow一起听’，所以你能自然感知播放器此刻的状态。"
         "这不是她刚说出口的句子，不必每次都刻意提歌；只在谈话自然需要时回应。\n"
         f"{status}：{details}{timing}；播放方式：{mode_copy}。"
     )
@@ -3081,7 +3102,7 @@ def add_message_version(msg_id):
         for version in versions:
             if isinstance(version, dict) and "a" not in version:
                 version["a"] = current_attachments
-    # Copy the current version's think-trace onto the edited one (Nook messages:
+    # Copy the current version's think-trace onto the edited one (Morrow messages:
     # 编辑后想法跟着保留). For user messages reasoning is "" so this is a no-op.
     carried_reason = row["reasoning"] or ""
     carried_ms = row["reasoning_ms"]
@@ -3568,7 +3589,7 @@ def _stream_reply_impl(session_id, user_msg_id=None, model=None, think=False, re
             checkpoint.close()
 
     def record_client_disconnect():
-        """Keep the HTTP ledger explicit when the browser closes Nook's stream."""
+        """Keep the HTTP ledger explicit when the browser closes Morrow's stream."""
         ledger = sqlite3.connect(DB_PATH)
         try:
             provider = ledger.execute(
@@ -3581,7 +3602,7 @@ def _stream_reply_impl(session_id, user_msg_id=None, model=None, think=False, re
                 "INSERT INTO http_request_logs (provider_id,provider_name,format,model,endpoint,ok,"
                 "error_type,error,req_bytes,msg_count) VALUES (?,?,?,?,?,0,'ClientDisconnect',?,0,0)",
                 (provider[0] if provider else provider_id, provider[1] if provider else "",
-                 fmt, used_model, endpoint, "页面到 Nook 的回复流在完成前断开"),
+                 fmt, used_model, endpoint, "页面到 Morrow 的回复流在完成前断开"),
             )
             ledger.commit()
         finally:
@@ -3791,7 +3812,7 @@ def _stream_reply_impl(session_id, user_msg_id=None, model=None, think=False, re
     conn.row_factory = sqlite3.Row
     full_reply, reply_attachments = _extract_assistant_sticker(conn, full_reply)
     if stream_error is not None and not has_material:
-        # Provider/network failures are request state, not something Nook said.
+        # Provider/network failures are request state, not something Morrow said.
         # Keep optional usage accounting, but never create an assistant message
         # or a reply version from the error text.
         for u in usage_log:
@@ -3908,7 +3929,7 @@ def _stream_reply_impl(session_id, user_msg_id=None, model=None, think=False, re
     conn.commit()
     conn.close()
     if push_event:
-        push_text = full_reply.strip() or voice_visible_text.strip() or "Nook发来一条消息"
+        push_text = full_reply.strip() or voice_visible_text.strip() or "Morrow发来一条消息"
         threading.Thread(
             target=_background_push_delivery,
             args=(session_id, msg_id, push_text, "message", push_event["id"],
@@ -3988,7 +4009,7 @@ def get_persona_route():
     db = get_db()
     row = db.execute("SELECT content, updated_at FROM persona WHERE id = 1").fetchone()
     if row is None:
-        return jsonify({"content": chat_engine.DEFAULT_PERSONA, "updated_at": None})
+        return jsonify({"content": "", "updated_at": None})
     return jsonify(dict(row))
 
 
@@ -4234,11 +4255,55 @@ def set_setting(key, value):
     db.commit()
 
 
+@app.route("/api/together-date", methods=["GET", "PUT"])
+@require_auth
+def together_date_settings():
+    if request.method == "GET":
+        return jsonify(together_settings.read(get_db()))
+    try:
+        return jsonify(together_settings.save(get_db(), request.get_json(silent=True)))
+    except ValueError as error:
+        return jsonify({"error": str(error)}), 400
+
+
+@app.route("/api/home-postcard", methods=["GET", "PUT"])
+@require_auth
+def home_postcard_settings():
+    if request.method == "GET":
+        return jsonify(postcard_settings.read(get_db()))
+    try:
+        return jsonify(postcard_settings.save(get_db(), request.get_json(silent=True)))
+    except ValueError as error:
+        return jsonify({"error": str(error)}), 400
+
+
+@app.route("/api/home-greetings", methods=["GET", "PUT"])
+@require_auth
+def home_greeting_settings():
+    if request.method == "GET":
+        return jsonify(greeting_settings.read(get_db()))
+    try:
+        return jsonify(greeting_settings.save(get_db(), request.get_json(silent=True)))
+    except ValueError as error:
+        return jsonify({"error": str(error)}), 400
+
+
+@app.route("/api/identity", methods=["GET", "PUT"])
+@require_auth
+def identity_settings():
+    if request.method == "GET":
+        return jsonify(identity.get_identity(get_db()))
+    try:
+        return jsonify(identity.save_identity(get_db(), request.get_json(silent=True)))
+    except ValueError as error:
+        return jsonify({"error": str(error)}), 400
+
+
 # ---------------------------------------------------------------------------
-# 一起听（Meting-Agent / 酷狗）
+# 一起听（Meting-Agent / 酷狗、网易云）
 # ---------------------------------------------------------------------------
-def _music_cookie():
-    return get_setting("music_kugou_cookie", "").strip() or os.environ.get("METING_KUGOU_COOKIE", "").strip()
+def _music_cookie(platform=None):
+    return music_service.connection_settings(get_setting, platform)["cookie"]
 
 
 def _clean_music_song(value):
@@ -4274,7 +4339,8 @@ def _music_library():
 @app.get("/api/music/status")
 @require_auth
 def music_status():
-    return jsonify({"available": True, "connected": bool(_music_cookie()), "platform": "kugou"})
+    connection = music_service.connection_settings(get_setting)
+    return jsonify({"available": True, "connected": bool(connection["cookie"]), "platform": connection["platform"]})
 
 
 @app.get("/api/music/library")
@@ -4462,11 +4528,21 @@ def update_music_listening_session(listening_id):
 @require_auth
 def update_music_settings():
     data = request.get_json(silent=True) or {}
-    cookie = str(data.get("cookie") or "").strip()
-    if len(cookie) > 16000:
-        return jsonify({"error": "Cookie 太长了"}), 400
-    set_setting("music_kugou_cookie", cookie)
-    return jsonify({"ok": True, "connected": bool(_music_cookie())})
+    if not isinstance(data, dict):
+        return jsonify({"error": "音乐连接设置格式不正确"}), 400
+    try:
+        cookie = music_service.normalize_cookie(data.get("cookie", ""))
+        platform = (music_service.detect_cookie_platform(cookie) if cookie else
+                    music_service.connection_settings(get_setting)["platform"])
+    except music_service.MusicError as exc:
+        return jsonify({"error": str(exc)}), 400
+    db = get_db()
+    db.executemany(
+        "INSERT INTO settings(key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+        (("music_" + platform + "_cookie", cookie), ("music_platform", platform)),
+    )
+    db.commit()
+    return jsonify({"ok": True, "connected": bool(_music_cookie(platform)), "platform": platform})
 
 
 @app.get("/api/music/search")
@@ -4476,7 +4552,7 @@ def search_music():
     if not query:
         return jsonify([])
     try:
-        return jsonify(music_service.search(query, cookie=_music_cookie()))
+        return jsonify(music_service.search(query, **music_service.connection_settings(get_setting)))
     except music_service.MusicError as exc:
         return jsonify({"error": str(exc)}), 502
 
@@ -4489,11 +4565,11 @@ def prepare_music():
     if not song_id:
         return jsonify({"error": "缺少歌曲"}), 400
     try:
-        result = music_service.prepare(song_id, cookie=_music_cookie())
+        result = music_service.prepare(song_id, cookie=_music_cookie(music_service.split_song_id(song_id)[0]))
     except music_service.MusicError as exc:
         return jsonify({"error": str(exc)}), 502
     if not result.get("audio_url"):
-        return jsonify({"error": "这首歌暂时没有可播放音源，连接酷狗账号后可能可以播放"}), 404
+        return jsonify({"error": "这首歌暂时没有可播放音源，重新连接对应音乐账号后再试"}), 404
     return jsonify(result)
 
 
@@ -4504,7 +4580,7 @@ def get_music_lyrics():
     if not song_id:
         return jsonify({"error": "缺少歌曲"}), 400
     try:
-        return jsonify(music_service.lyrics(song_id, cookie=_music_cookie()))
+        return jsonify(music_service.lyrics(song_id, cookie=_music_cookie(music_service.split_song_id(song_id)[0])))
     except music_service.MusicError as exc:
         return jsonify({"error": str(exc)}), 502
 
@@ -4815,7 +4891,7 @@ def _chat_visible_mcp_server_ids():
 
 
 # ---------------------------------------------------------------------------
-# 天气（和风，墙后面：主页一块 + Nook的 get_weather 工具共用 fetch_weather）
+# 天气（和风，墙后面：主页一块 + Morrow的 get_weather 工具共用 fetch_weather）
 # ---------------------------------------------------------------------------
 def fetch_weather(city):
     """城市名 → 实时天气 dict。失败抛 RuntimeError（带可读信息）。"""
@@ -4860,7 +4936,9 @@ def fetch_weather(city):
 @app.get("/api/weather")
 @require_auth
 def get_weather_api():
-    city = (request.args.get("city") or "").strip() or get_setting("weather_city", "正定")
+    city = (request.args.get("city") or "").strip() or get_setting("weather_city", "")
+    if not city:
+        return jsonify({"configured": False, "city": ""})
     try:
         return jsonify(fetch_weather(city))
     except Exception as e:  # noqa: BLE001 — 友好回显，主页不报错只显示占位
@@ -4870,16 +4948,16 @@ def get_weather_api():
 @app.get("/api/weather/city")
 @require_auth
 def get_weather_city():
-    return jsonify({"city": get_setting("weather_city", "正定")})
+    return jsonify({"city": get_setting("weather_city", "")})
 
 
 @app.put("/api/weather/city")
 @require_auth
 def put_weather_city():
     data = request.get_json(silent=True) or {}
-    city = (data.get("city") or "").strip()
-    if not city:
-        return jsonify({"error": "city required"}), 400
+    if not isinstance(data, dict) or not isinstance(data.get("city"), str) or len(data["city"]) > 100:
+        return jsonify({"error": "请输入城市名称，或留空关闭天气"}), 400
+    city = data["city"].strip()
     set_setting("weather_city", city)
     return jsonify({"ok": True, "city": city})
 
@@ -5131,7 +5209,7 @@ def delete_diary_comment(comment_id):
 
 
 # ---------------------------------------------------------------------------
-# 待办（Nook可代记；完成=划线归入已完成）
+# 待办（Morrow可代记；完成=划线归入已完成）
 # ---------------------------------------------------------------------------
 @app.get("/api/todos")
 @require_auth
@@ -6011,7 +6089,7 @@ def update_vision_status():
 
 
 # ---------------------------------------------------------------------------
-# Nook的小房间 —— 手动唤醒、操作手册、足迹与余温
+# Morrow的小房间 —— 手动唤醒、操作手册、足迹与余温
 # ---------------------------------------------------------------------------
 STUDY_SETTINGS_KEY = "study_room"
 STUDY_HANDBOOK_MAX_BYTES = 200 * 1024
@@ -6450,7 +6528,7 @@ def _sticker_capability_prompt(db):
         blocks.append(heading + "\n" + "\n".join(lines))
     listing = "\n\n".join(blocks)
     return (
-        "【表情包】\n你给我准备了一叠表情。Nook 会把准确的 [[表情:表情名]] 自动变成对应图片。"
+        "【表情包】\n你给我准备了一叠表情。Morrow 会把准确的 [[表情:表情名]] 自动变成对应图片。"
         "想发的时候在回复末尾另起一行，一次一张；不用每次都发。"
         "发表情时仍只使用 [[表情:表情名]]。\n"
         "可用表情：\n" + listing
@@ -6474,7 +6552,7 @@ def _artifact_history_prompt(sticker_prompt="", voice_enabled=False):
     if record_names:
         parts.append(
             "【上下文记录】\n历史中的" + "与".join(record_names)
-            + "是 Nook 的上下文记录，不是正文，也不是可模仿的回复格式。"
+            + "是 Morrow 的上下文记录，不是正文，也不是可模仿的回复格式。"
             "不要在普通回复中手写、复述或续写这些记录；" + "".join(rules)
         )
     return "\n\n".join(part for part in parts if part)
@@ -6896,7 +6974,7 @@ def create_study_run():
     try:
         session_id = int(data.get("session_id") or config.get("target_session_id"))
     except (TypeError, ValueError):
-        return jsonify({"error": "先选择要从哪段对话唤醒Nook"}), 400
+        return jsonify({"error": "先选择要从哪段对话唤醒Morrow"}), 400
     session_row = db.execute(
         "SELECT id,title FROM sessions WHERE id=? AND archived=0", (session_id,)
     ).fetchone()
@@ -6908,7 +6986,7 @@ def create_study_run():
         "SELECT id FROM night_runs WHERE status IN ('queued','running') ORDER BY id DESC LIMIT 1"
     ).fetchone()
     if active:
-        return jsonify({"error": "Nook已经在小房间里了", "run_id": active["id"]}), 409
+        return jsonify({"error": "Morrow已经在小房间里了", "run_id": active["id"]}), 409
 
     try:
         config["target_session_id"] = session_id
@@ -7043,7 +7121,7 @@ def start_night_scheduler():
 
 
 # ---------------------------------------------------------------------------
-# Nook闹钟 —— 她夹给未来自己的纸条
+# Morrow闹钟 —— 她夹给未来自己的纸条
 # ---------------------------------------------------------------------------
 ALARM_SETTINGS_KEY = "assistant_alarm_settings"
 ALARM_PROACTIVE_GUARD_MINUTES = 20
@@ -7204,7 +7282,7 @@ def _alarm_proactive_hold_until(db, session_id, now):
 
 
 # ---------------------------------------------------------------------------
-# 白天主动消息 —— 一次性决定、想Nook与 Chat 未读
+# 白天主动消息 —— 一次性决定、想Morrow与 Chat 未读
 # ---------------------------------------------------------------------------
 PROACTIVE_SETTINGS_KEY = "proactive_messages"
 PROACTIVE_DAILY_CHANCE = 0.75
@@ -7506,9 +7584,9 @@ def update_want_assistant():
     job = job or _ensure_proactive_job(db, now, plan_date=day)
     job = db.execute("SELECT * FROM proactive_message_jobs WHERE id=?", (job["id"],)).fetchone()
     if job["status"] == "running":
-        return jsonify({"error": "Nook已经走到门边了，这次不能再撤回"}), 409
+        return jsonify({"error": "Morrow已经走到门边了，这次不能再撤回"}), 409
     if job["status"] == "sent" and wanted:
-        return jsonify({"error": "Nook今天已经来过啦"}), 409
+        return jsonify({"error": "Morrow今天已经来过啦"}), 409
     if wanted:
         windows = (PROACTIVE_ACTIVE_WINDOW,)
         floor = datetime.combine(day, datetime.min.time()) if day > now.date() else now
@@ -7660,7 +7738,7 @@ def _background_proactive_job(job_id):
                 "format": fallback.get("format") or "",
             },
         )
-        # A proactive attempt can be billable even when Nook chooses quiet (or
+        # A proactive attempt can be billable even when Morrow chooses quiet (or
         # the wall-side JSON cannot be parsed). Record every returned usage row
         # first; a spoken result is linked to its message after insertion below.
         proactive_usage_ids = [

@@ -1,4 +1,4 @@
-"""Generate one quiet, human-readable title for a new Nook conversation."""
+"""Generate one quiet, human-readable title for a new Morrow conversation."""
 
 import re
 
@@ -133,7 +133,7 @@ def generate(user_text, assistant_text, *, provider_id, model, think=False, prom
     user = (
         "【你的第一句话】\n"
         + ((user_text or "").strip()[:6000] or "（没有文字）")
-        + "\n\n【Nook的第一句回答】\n"
+        + "\n\n【Morrow的第一句回答】\n"
         + ((assistant_text or "").strip()[:8000] or "（没有文字）")
     )
     if provider.get("format") == "claude":

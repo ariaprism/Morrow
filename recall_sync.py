@@ -1,4 +1,4 @@
-"""Synchronize Ombre's read-only recall-card resource into Nook SQLite."""
+"""Synchronize Ombre's read-only recall-card resource into Morrow SQLite."""
 
 from __future__ import annotations
 
@@ -140,7 +140,7 @@ def fetch_snapshot(read_page):
             seen.add(card["bucket_id"])
             cards.append(card)
         if len(cards) > MAX_CARDS:
-            raise RecallSyncError("召回卡数量超过 Nook 的安全上限")
+            raise RecallSyncError("召回卡数量超过 Morrow 的安全上限")
         if not next_uri:
             if payload.get("has_more"):
                 raise RecallSyncError("Ombre 召回卡缺少下一页地址")

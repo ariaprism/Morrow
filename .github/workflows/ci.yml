@@ -22,5 +22,11 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: python -m pip install --disable-pip-version-check -r requirements.txt
-      - run: python -m py_compile *.py
-      - run: python -m unittest discover -p "test_*.py"
+      - run: python -m compileall -q -x '(^|[\\/])(?:\.venv|venv|node_modules|data)([\\/]|$)' .
+      - run: python -m unittest discover -s tests -p "test_*.py"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: node --test tests/music_bridge.test.mjs tests/push_capabilities.test.mjs

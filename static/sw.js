@@ -43,7 +43,7 @@ self.addEventListener('push', event => {
     if(!payload.force_show){
       const windows=await self.clients.matchAll({type:'window',includeUncontrolled:true});
       // Android may keep a background/locked standalone window marked visible.
-      // Suppress only when Nook is genuinely the window in the user's hand.
+      // Suppress only when Morrow is genuinely the window in the user's hand.
       const foreground=windows.find(client=>client.visibilityState==='visible'&&client.focused);
       if(foreground){
         await updatePushEvent(payload,'suppress');
@@ -53,16 +53,16 @@ self.addEventListener('push', event => {
       const claim=await updatePushEvent(payload,'claim');
       if(payload.event_id&&!claim.allow)return;
     }
+    const title=String(payload.title||'Morrow');
     const bodies=(Array.isArray(payload.bodies)?payload.bodies:[])
       .slice(0,8).map(body=>String(body||'').trim()).filter(Boolean);
-    if(!bodies.length)bodies.push(payload.body||'Nook发来一条消息');
+    if(!bodies.length)bodies.push(payload.body||`${title}发来一条消息`);
     const group=payload.group||payload.tag||'nook-message';
     const interval=Math.max(0,Math.min(Number(payload.interval_ms)||1500,2000));
     for(let index=0;index<bodies.length;index++){
-      await self.registration.showNotification(payload.title||'Nook',{
+      await self.registration.showNotification(title,{
         body:bodies[index],
-        icon:'/static/icons/icon-192.png',
-        badge:'/static/icons/icon-192.png',
+        badge:'/static/icons/badge-96.png?v=cat-1',
         tag:bodies.length>1?`${group}-${index}`:(payload.tag||group),
         data:{url:payload.url||'/?push_chat=1',group,event_id:payload.event_id,event_token:payload.event_token},
       });

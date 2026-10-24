@@ -1,4 +1,4 @@
-"""Versioned full-backup export and restore for Nook's durable user data."""
+"""Versioned full-backup export and restore for Morrow's durable user data."""
 
 from __future__ import annotations
 
@@ -178,7 +178,7 @@ def cloud_media_selection(db, upload_dir, max_images=500,
     """Choose cloud-backup files: all text attachments and recent originals.
 
     Image recency follows message ids rather than filesystem timestamps. Tool-copy
-    derivatives are deliberately omitted because Nook can recreate them.
+    derivatives are deliberately omitted because Morrow can recreate them.
     """
     upload_root = Path(upload_dir)
     selected = set()
@@ -283,7 +283,7 @@ def _read_and_validate(archive):
     if len(names) != len(set(names)):
         raise BackupError("备份包里存在重复文件。")
     if "manifest.json" not in names or "data.json" not in names:
-        raise BackupError("这不是完整的Nook备份包。")
+        raise BackupError("这不是完整的Morrow备份包。")
     if sum(item.file_size for item in infos) > MAX_UNCOMPRESSED_SIZE:
         raise BackupError("备份解压后超过 1GB，已停止导入。")
     for name in names:

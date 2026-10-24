@@ -1,11 +1,14 @@
 # Secrets
 .env
+.env.*
+!.env.example
 
 # Data (lives only on the server, never in git)
 data/
 
 # Local notes and generated artifacts
 .nook-local/
+.marginalia-local/
 *.local.md
 
 # Python
@@ -30,3 +33,17 @@ coverage.xml
 Thumbs.db
 .idea/
 .vscode/
+
+# Private exports, backups, credentials and deployment build metadata
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+*.zip
+*.bak
+*.pem
+*.key
+nook-release-version
+nook-release-sha

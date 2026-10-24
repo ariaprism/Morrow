@@ -1,0 +1,22 @@
+[Unit]
+Description=Morrow private AI space
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=morrow
+Group=morrow
+WorkingDirectory=/opt/morrow
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/morrow/.venv/bin/gunicorn --workers 1 --worker-class gthread --threads 8 --bind 127.0.0.1:5151 --timeout 180 --graceful-timeout 120 --error-logfile - wsgi:app
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=150
+KillMode=control-group
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

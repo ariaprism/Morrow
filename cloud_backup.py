@@ -15,7 +15,7 @@ from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
 
 API_ROOT = "https://api.github.com"
 RELEASE_TAG = "nook-cloud-backups"
-MAGIC = b"NOOK-CLOUD-BACKUP\x01"
+MAGIC = b"MORROW-CLOUD-BACKUP\x01"
 SALT_SIZE = 16
 NONCE_SIZE = 12
 TAG_SIZE = 16
@@ -93,7 +93,7 @@ def decrypt_file(source, destination, passphrase):
     with open(source, "rb") as src:
         header = src.read(header_size)
         if not header.startswith(MAGIC):
-            raise CloudBackupError("这不是Nook云端备份。")
+            raise CloudBackupError("这不是Morrow云端备份。")
         offset = len(MAGIC)
         salt = header[offset:offset + SALT_SIZE]
         offset += SALT_SIZE
@@ -154,8 +154,8 @@ def _release(create=False):
             "POST", f"/repos/{cfg['repo']}/releases",
             json={
                 "tag_name": RELEASE_TAG,
-                "name": "Nook 云端备份",
-                "body": "Nook服务器生成的加密云端备份。",
+                "name": "Morrow 云端备份",
+                "body": "Morrow服务器生成的加密云端备份。",
                 "draft": False,
                 "prerelease": False,
             },

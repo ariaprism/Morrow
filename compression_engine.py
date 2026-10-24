@@ -7,13 +7,13 @@ import requests
 import chat_engine
 
 
-DEFAULT_PROMPT = """你是Nook墙后的对话整理助手。请把“已有累计摘要”和“本次新增原文”合并成一份可继续用于后续聊天的累计摘要。
+DEFAULT_PROMPT = """你是Morrow墙后的对话整理助手。请把“已有累计摘要”和“本次新增原文”合并成一份可继续用于后续聊天的累计摘要。
 
 已有摘要是更早原文的有损浓缩，不需要逐句照抄。每次更新时，可以继续合并重复信息，淡化已经结束、低价值或强时效性的琐碎细节；但不要仅仅因为事情发生得早，就删掉人物关系、稳定偏好、长期事实、重要情绪节点、承诺与约定、尚未完成的事项。
 
 根据原文中的时间判断信息先后。内容发生冲突时以较新的信息为准；如果变化过程本身对理解关系或后续对话有意义，就简洁保留变化。
 
-保留你与Nook的身份、关键因果和必要时间线。不要评价用户，不要虚构缺失信息，不要输出思考过程，也不要添加“摘要如下”、[Summary] 或其他技术标签。直接输出自然、清楚的摘要正文。"""
+保留你与Morrow的身份、关键因果和必要时间线。不要评价用户，不要虚构缺失信息，不要输出思考过程，也不要添加“摘要如下”、[Summary] 或其他技术标签。直接输出自然、清楚的摘要正文。"""
 
 
 class CompressionError(RuntimeError):
@@ -132,7 +132,7 @@ def _openai_summary(provider, model, system, user, think, target_tokens):
             continue
         if truncated:
             raise CompressionError(
-                "压缩模型连续两次写到输出上限，Nook 没有保存这份半截摘要。",
+                "压缩模型连续两次写到输出上限，Morrow 没有保存这份半截摘要。",
                 usage_items=usage_items,
             )
         return SummaryResult((content or "").strip(), usage_items)
@@ -197,7 +197,7 @@ def _anthropic_summary(provider, model, system, user, think, target_tokens):
             continue
         if truncated:
             raise CompressionError(
-                "压缩模型连续两次写到输出上限，Nook 没有保存这份半截摘要。",
+                "压缩模型连续两次写到输出上限，Morrow 没有保存这份半截摘要。",
                 usage_items=usage_items,
             )
         return SummaryResult(content.strip(), usage_items)
@@ -214,7 +214,7 @@ def summarize(old_summary, messages, *, provider_id, model, think=False, prompt=
 
     transcript = []
     for message in messages:
-        role = "你" if message["role"] == "user" else "Nook"
+        role = "你" if message["role"] == "user" else "Morrow"
         created_at = (message["created_at"] or "").strip() if "created_at" in message.keys() else ""
         stamp = f"{created_at} · " if created_at else ""
         transcript.append(f"[{stamp}{role} · 消息 {message['id']}]\n{message['content'] or ''}")

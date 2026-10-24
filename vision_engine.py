@@ -1,4 +1,4 @@
-"""Quiet image-memory generation for Nook chat attachments."""
+"""Quiet image-memory generation for Morrow chat attachments."""
 
 from __future__ import annotations
 

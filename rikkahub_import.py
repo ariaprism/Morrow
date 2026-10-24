@@ -91,7 +91,7 @@ def _extract_images(content, start_index):
             raise RikkaHubImportError("有一张内嵌图片已经损坏") from exc
         detected = detect_image_mime(blob)
         if not detected:
-            raise RikkaHubImportError("有一张内嵌图片不是 Nook 支持的图片格式")
+            raise RikkaHubImportError("有一张内嵌图片不是 Morrow 支持的图片格式")
         if detected != match.group("mime").lower():
             raise RikkaHubImportError("有一张内嵌图片的格式标记与内容不一致")
         if len(blob) > MAX_IMAGE_BYTES:

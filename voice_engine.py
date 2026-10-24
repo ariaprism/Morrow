@@ -1,4 +1,4 @@
-"""Voice-letter parsing and model-facing guidance for Nook."""
+"""Voice-letter parsing and model-facing guidance for Morrow."""
 
 from __future__ import annotations
 

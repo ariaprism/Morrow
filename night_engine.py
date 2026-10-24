@@ -1,4 +1,4 @@
-"""Nook小房间引擎：手动/未来定时唤醒、足迹与余温。
+"""Morrow小房间引擎：手动/未来定时唤醒、足迹与余温。
 
 小房间复用 chat_engine 的人设、记忆、摘要、历史、图片策略和工具循环，
 但临时唤醒消息不会写进 messages。模型必须用专用终止工具交回足迹；
@@ -436,7 +436,7 @@ def recover_activity_log(tool_log, *, failed=False, at=""):
             "sequence": len(out) + 1,
             "at": at,
             "code": "interrupted",
-            "text": "活动在收好以前中断；旧版没有保存她当时的旁白。",
+            "text": "活动在收好以前中断；旧版没有保存当时的旁白。",
             "recovered": True,
         })
     return out
@@ -541,7 +541,7 @@ def build_recovery_record(attempts):
             if not isinstance(event, dict):
                 continue
             if event.get("type") == "monologue":
-                lines.extend(["", "Nook当时留下的独白：", str(event.get("text") or "")])
+                lines.extend(["", "Morrow当时留下的独白：", str(event.get("text") or "")])
             elif event.get("type") == "tool":
                 name = event.get("display_tool") or event.get("name") or event.get("tool") or "工具"
                 lines.extend([
@@ -561,7 +561,7 @@ def build_recovery_record(attempts):
 def _event_message(wake_prompt, origin, user_note="", recovery_record=""):
     source = {
         "manual": "你手动唤醒",
-        "automatic": "Nook 夜间自主唤醒",
+        "automatic": "Morrow 夜间自主唤醒",
         "recovery": "上次活动异常恢复",
         "recovery_manual": "你手动恢复唤醒",
     }.get(origin, origin or "未知")
@@ -650,7 +650,7 @@ def _run_attempt(*, session_id, session_title, origin, wake_prompt, handbook_tex
         stable_extra=stable_extra,
         extra_tools=[FINISH_TOOL],
         extra_executor=capture.execute,
-        extra_narrations={FINISH_TOOL_NAME: "Nook合上了小房间里的本子"},
+        extra_narrations={FINISH_TOOL_NAME: "Morrow合上了小房间里的本子"},
         max_tool_rounds=MAX_ACTIVITY_ROUNDS,
         closing_tool_names=[FINISH_TOOL_NAME],
         closing_prompt=CLOSING_PROMPT,
@@ -682,7 +682,7 @@ def _run_attempt(*, session_id, session_title, origin, wake_prompt, handbook_tex
                     "time_limit": "这次活动到了约定的最长时间，小房间开始收尾。",
                     "round_limit": "这次活动走到安全边界，小房间开始收尾。",
                     "tool_limit": "工具活动碰到异常保险边界，小房间开始收尾。",
-                    "natural": "她停下普通活动，开始收好小房间。",
+                    "natural": "停下普通活动，开始收好小房间。",
                 }.get(end_reason, "小房间开始收尾。"),
                 "at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             })
@@ -751,7 +751,7 @@ def _run_attempt(*, session_id, session_title, origin, wake_prompt, handbook_tex
         "tool_log": tool_log,
         "activity_log": activity_log,
         "usage_log": usage_log,
-        "error": _clip(error or "Nook这次没来得及把小房间收好。", 2000),
+        "error": _clip(error or "Morrow这次没来得及把小房间收好。", 2000),
         "end_reason": end_reason or ("provider_error" if error else "unfinished"),
         "material": material,
         "provider_id": provider_id,
