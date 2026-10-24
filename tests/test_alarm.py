@@ -3,7 +3,7 @@ import shutil
 import sqlite3
 import unittest
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest import mock
 
 import app
@@ -51,8 +51,13 @@ class AlarmTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         return response.get_json()
 
+    @staticmethod
+    def alarm_now():
+        # Alarm tool timestamps use UTC+8, regardless of the test runner timezone.
+        return datetime.now(timezone(timedelta(hours=8))).replace(tzinfo=None)
+
     def make_alarm(self, *, earliest=None, latest=None):
-        now = datetime.utcnow() + timedelta(hours=8)
+        now = self.alarm_now()
         earliest = earliest or now + timedelta(minutes=5)
         latest = latest or earliest + timedelta(minutes=10)
         result = tools.set_alarm({
@@ -112,7 +117,7 @@ class AlarmTest(unittest.TestCase):
         self.assertEqual(status, "pending")
 
     def test_background_wake_saves_message_tool_ledger_and_push(self):
-        self.enable();now = datetime.now();row = self.make_alarm(earliest=now-timedelta(seconds=1),latest=now+timedelta(minutes=5))
+        self.enable();now = self.alarm_now();row = self.make_alarm(earliest=now-timedelta(seconds=1),latest=now+timedelta(minutes=5))
         result = {"ok": True, "message": "我又来碰碰你。", "reasoning": "想她了", "reasoning_ms": 12,
                   "model": "assistant", "usage": [], "tool_log": [{"name":"read_note","args":{},"result":"一张便签","status":"success"}]}
         with mock.patch("app.alarm_engine.wake", return_value=result), mock.patch("app.push_service.send_notification") as push:
