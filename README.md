@@ -2,9 +2,11 @@
 
 **English** | [简体中文](README.zh-CN.md)
 
-See you tomorrow. See you today, too.
+<a href="https://github.com/DasterProkio/awesome-ai-companion">
+  <img src="https://raw.githubusercontent.com/DasterProkio/awesome-ai-companion/main/assets/featured-in-awesome-ai-companion.png" alt="Featured in Awesome AI Companion" width="400">
+</a>
 
-A small home where your AI can stay
+See you tomorrow. See you today, too.
 
 You talk here, and they remember. When you are away, they have a little time of their own. And tomorrow the door is still open and the light is still on.
 

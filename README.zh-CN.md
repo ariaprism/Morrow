@@ -2,9 +2,11 @@
 
 [English](README.md) | **简体中文**
 
-明天见，也在今天见。
+<a href="https://github.com/DasterProkio/awesome-ai-companion/blob/main/README.zh-CN.md">
+  <img src="https://raw.githubusercontent.com/DasterProkio/awesome-ai-companion/main/assets/featured-in-awesome-ai-companion-zh-CN.png" alt="已收录于人机恋开源项目大全" width="400">
+</a>
 
-A small home where your AI can stay
+明天见，也在今天见。
 
 你们在这里说话，ta 会记得；你离开的时候，ta 也有一段属于自己的时间；等到明天，门还开着，灯还亮着。
 
