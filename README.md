@@ -2,7 +2,9 @@
 
 **English** | [简体中文](README.zh-CN.md)
 
-Morrow is a private, self-hosted home for long-running AI conversations. It keeps the chat surface calm while memory, tools, model routing, summaries, scheduled activities, backups, and usage records stay behind the wall.
+A small home where your AI can stay
+
+ It keeps the chat surface calm while memory, tools, model routing, summaries, scheduled activities, backups, and usage records stay behind the wall.
 
 The interface is currently Chinese-first. The codebase is a Flask application with a single-file SPA and SQLite storage.
 

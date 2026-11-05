@@ -1,7 +1,7 @@
 {
   "name": "Morrow",
   "short_name": "Morrow",
-  "description": "A private, self-hosted home for long-running AI conversations",
+  "description": "A small home where your AI can stay",
   "id": "/",
   "start_url": "/",
   "scope": "/",
