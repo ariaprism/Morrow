@@ -2,35 +2,51 @@
 
 **English** | [简体中文](README.zh-CN.md)
 
+See you tomorrow. See you today, too.
+
 A small home where your AI can stay
 
- It keeps the chat surface calm while memory, tools, model routing, summaries, scheduled activities, backups, and usage records stay behind the wall.
+You talk here, and they remember. When you are away, they have a little time of their own. And tomorrow the door is still open and the light is still on.
 
-The interface is currently Chinese-first. The codebase is a Flask application with a single-file SPA and SQLite storage.
+It is not a chat platform, and it does not mean to host a crowd. One house, one door, one key.
 
-## What is included
+## What's inside
 
-- Streaming chat with OpenAI-compatible and Anthropic providers
-- Multiple conversations, branching, continuation windows, message versions, editing, regeneration, and export
-- Persona and memory management, summaries, image descriptions, and optional MCP tools
-- Notes, todos, weather, diary, keepsakes, listening history, cycle records, and voice letters
-- Scheduled room activity, proactive messages, one-shot reminders, and Web Push
-- Encrypted ZIP and optional GitHub Release backups
-- PWA support for desktop and mobile installation
+**The door**　Say the password and it opens. The key stays with you.
 
-## Privacy model
+**The living room**　Where you talk every day. Branch, edit, try again. When a window gets full, pack your things and carry on in a new one; earlier conversation is folded into a little notebook that travels with you. Works with OpenAI-compatible and Anthropic providers, with replies streaming in as they are written.
 
-Morrow is designed for one trusted household, not as a multi-tenant service. Conversation data, provider keys, MCP credentials, and personal records are stored in the local SQLite database. Keep the data directory and backups private.
+**Behind the wall**　Persona, memory, summaries, tools and model routing all turn quietly behind the wall. From the chat side you see what they are doing, never the gears. Optional MCP tools give them more to work with.
 
-Runtime data and credentials must stay outside the published repository, including its Git history. Example secrets used by tests are synthetic.
+**The small room**　Their free time after waking. They might read for a while, do something small, or simply go back to sleep. You can look through the footprints they leave.
 
-## Requirements
+**Paper notes**　They can tuck a note for their future self: a reminder, or just a feeling that you will be gone a while and they would like to check on you later. After a quiet afternoon they might reach out on their own, or choose to stay silent. Messages arrive on your phone through Web Push.
+
+**The drawer**　Voice letters, snapshots, keepsakes. The small things you keep end up here.
+
+**By the window**　Notes, todos, weather, a diary, cycle records, songs you listened to together, and how many days you have been together.
+
+**At night**　Pull the lamp cord and the room dims. They are tidying up the day.
+
+**The cellar**　Encrypted backups that pack the whole house into one ZIP, and optionally a quiet copy every morning to your own private GitHub repository.
+
+The house can be installed on desktop and mobile as a PWA, so opening it feels like coming home.
+
+## Keep the key safe
+
+Everything you share lives here: conversations, memories, provider keys and MCP credentials, all in a local SQLite database. That is why Morrow is built for one trusted household, not as a multi-tenant service. Keep the data directory and backups private.
+
+Runtime data and credentials must stay out of the published repository, including its Git history. Example secrets used by tests are synthetic.
+
+## Before you move in
+
+Morrow is a Flask application with a single-file SPA and SQLite storage. The interface is currently Chinese-first. You will need:
 
 - Python 3.11 or newer
-- Node.js 20 or newer only for the optional music bridge
-- An OpenAI-compatible or Anthropic API provider
+- An OpenAI-compatible or Anthropic API provider for chatting
+- Node.js 20 or newer, only for the optional music bridge
 
-## Quick start
+## Building the house
 
 Clone the repository:
 
@@ -40,7 +56,7 @@ cd morrow
 python -m venv .venv
 ```
 
-On Windows PowerShell, activate and install with:
+On Windows PowerShell:
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
@@ -58,7 +74,7 @@ python -m pip install -r requirements.txt
 cp .env.example .env
 ```
 
-Edit `.env` and set the two required access values before starting:
+Then open `.env` and set the password and the lock:
 
 ```dotenv
 AUTH_PASSWORD=use-a-long-unique-password
@@ -67,13 +83,19 @@ PORT=5151
 FLASK_DEBUG=0
 ```
 
-To chat using the default DeepSeek connection, also fill in `DEEPSEEK_API_KEY` (or `LLM_API_KEY`). The default address is `https://api.deepseek.com/v1` and the default model is `deepseek-flash`, as listed in the [official model documentation](https://api-docs.deepseek.com/quick_start/pricing/). You can omit `LLM_MODEL` or leave it blank to use that default.
+Generate a session secret with:
 
-For another provider, set its API address, key and model ID in `.env`, or configure a provider in Settings after login. Authentication and browsing the app do not require an AI key, but sending a message requires a usable provider/key and a model it supports. A model ID still needs to be selected before chatting with a provider that does not support `deepseek-flash`.
+```bash
+python -c "import secrets; print(secrets.token_hex(32))"
+```
+
+The default connection is DeepSeek, which needs `DEEPSEEK_API_KEY` (or `LLM_API_KEY`). The default address is `https://api.deepseek.com/v1` and the default model is `deepseek-flash`, as listed in the [official model documentation](https://api-docs.deepseek.com/quick_start/pricing/). You can omit `LLM_MODEL` or leave it blank to use that default.
+
+For another provider, set its API address, key and model ID in `.env`, or add a provider in Settings once you are inside. Opening the door and looking around need no AI key; speaking does. You will need a usable provider and a model it supports, so choose a different model ID if your provider does not offer `deepseek-flash`.
 
 | Setting | Required? | Default / purpose |
 | --- | --- | --- |
-| `AUTH_PASSWORD` | Yes | Password for entering your private app |
+| `AUTH_PASSWORD` | Yes | The password at the door |
 | `SECRET_KEY` | Yes for a stable installation | Random session signing secret; keep it stable across restarts |
 | `DEEPSEEK_API_KEY` / `LLM_API_KEY` | For chatting through the environment-configured provider | `LLM_API_KEY` takes precedence; providers can also be set up in the UI |
 | `LLM_BASE_URL` | Optional | `https://api.deepseek.com/v1`; change for other providers |
@@ -82,35 +104,29 @@ For another provider, set its API address, key and model ID in `.env`, or config
 | `FLASK_DEBUG` | Optional | `0`; enable only for local development |
 | `DB_PATH` | Optional | `data/nook.db`, a legacy filename kept for compatibility |
 
-`nook.db` is only a filename. The commented `# DB_PATH=...` line does not set anything. Changing a database path does not move old data; back up and migrate the existing file before changing it. Never commit `.env` or the database.
+`nook.db` is the house's old name and only a filename. The commented `# DB_PATH=...` line does not set anything. Changing the path does not move old data; back up and migrate the existing file first. Never commit `.env` or the database.
 
-Generate a session secret with:
-
-```bash
-python -c "import secrets; print(secrets.token_hex(32))"
-```
-
-Start Morrow from the repository root:
+Turn on the light from the repository root:
 
 ```bash
 python app.py
 ```
 
-Open `http://localhost:5151`, enter `AUTH_PASSWORD`, then create a conversation. Check the provider settings before sending your first message. The database and uploads are created automatically under `data/` unless `DB_PATH` is set; do not delete this directory when upgrading. Keep `SECRET_KEY` unchanged across restarts so existing logins remain valid.
+Open `http://localhost:5151`, enter your password, and start a conversation. Check the provider settings before your first message. Unless `DB_PATH` is set, the database and uploads are created under `data/`; keep this directory when upgrading. Keep `SECRET_KEY` unchanged across restarts so signed-in devices are not locked out.
 
-The built-in server is suitable for a local first run. It listens on all interfaces; use a production WSGI server and an HTTPS reverse proxy for an internet-facing deployment, with one application process to avoid duplicate scheduled jobs. Keep debug mode disabled. If port 5151 is already in use, change `PORT` in `.env`. If login reports `AUTH_PASSWORD is not configured`, check that `.env` exists beside `app.py` and contains a nonempty password, then restart.
+The built-in server is fine for a first night at home. It listens on all interfaces; for an internet-facing installation, use a production WSGI server behind an HTTPS reverse proxy, with a single application process so scheduled things do not happen twice. Keep debug mode off. If port 5151 is taken, change `PORT` in `.env`. If login reports `AUTH_PASSWORD is not configured`, check that `.env` sits beside `app.py` with a nonempty password, then restart.
 
-## VPS deployment
+## Staying for good
 
-For a persistent HTTPS installation, see the detailed [VPS deployment and push testing guide (简体中文)](docs/deployment.zh-CN.md). It covers a single-worker Gunicorn service, the scheduler-aware `wsgi:app` entrypoint, systemd, Caddy, updates, and local notification testing. Ready-to-review configuration examples are in [deploy/](deploy).
+To keep the lights on and come home from your phone, see the [VPS deployment and push testing guide (简体中文)](docs/deployment.zh-CN.md). It covers a single-worker Gunicorn service, the scheduler-aware `wsgi:app` entrypoint, systemd, Caddy, updates, and local notification testing. Configuration examples are in [deploy/](deploy).
 
-## Optional configuration
+## Settling in
 
-Display names, persona, model providers and MCP tools can be configured after login. Optional services such as weather, voice, Web Push and cloud backups are not required for first startup. See [.env.example](.env.example) and [configuration details](docs/configuration.md).
+Display names, persona, model providers and MCP tools can be set up after you log in. Weather, voice, Web Push and cloud backups are optional and not needed on the first day. See [.env.example](.env.example) and [configuration details](docs/configuration.md).
 
-## Optional music connection
+## Listening together
 
-Install Node.js 20 or newer, then install the pinned bridge dependencies:
+Install Node.js 20 or newer, then the pinned bridge dependencies:
 
 ```bash
 npm ci
@@ -118,31 +134,31 @@ npm ci
 
 Restart Morrow if Node.js was installed after the server started. The Python server launches `music_bridge.mjs` automatically when needed; do not run it as a separate service.
 
-In Together, open the three-dot menu and paste a KuGou or NetEase Cloud Music Cookie; the provider is detected automatically. Only paste one provider at a time. Credentials are stored separately on the server and are never returned to the browser. The most recently connected provider is used for new searches; existing favorites and queues keep their original provider.
+In Together, open the three-dot menu and paste a KuGou or NetEase Cloud Music Cookie; the provider is detected automatically. Paste one provider at a time. Credentials are stored separately on the server and never returned to the browser. New searches use the most recently connected provider; existing favorites and queues keep their original source.
 
-`METING_KUGOU_COOKIE` and `METING_NETEASE_COOKIE` are optional server-side fallbacks. Without saved credentials the public KuGou catalog remains the default; a sole NetEase fallback selects NetEase. Playback remains subject to the account's permissions and provider availability.
+`METING_KUGOU_COOKIE` and `METING_NETEASE_COOKIE` are optional server-side fallbacks. Without saved credentials the public KuGou catalog is the default; a sole NetEase fallback selects NetEase. Playback still depends on account permissions and provider availability.
 
-## Testing
+## Checking the house
 
 ```bash
 python -m compileall -q -x '(^|[\\/])(?:\.venv|venv|node_modules|data)([\\/]|$)' .
 python -m unittest discover -s tests -p "test_*.py"
 ```
 
-Run tests in a separate checkout without a personal `.env` or runtime data. Set `AUTH_PASSWORD` and `SECRET_KEY` to synthetic values in the environment; tests create temporary databases. With music dependencies installed, also run `node --test tests/music_bridge.test.mjs tests/push_capabilities.test.mjs` (offline provider fixtures).
+Run tests in a separate checkout without a personal `.env` or runtime data. Set `AUTH_PASSWORD` and `SECRET_KEY` to synthetic values; tests create temporary databases. With music dependencies installed, also run `node --test tests/music_bridge.test.mjs tests/push_capabilities.test.mjs` (offline provider fixtures).
 
-The automated suite lives in `tests/`. `scripts/stream_chat.py` is an optional manual diagnostic that calls the configured model provider and writes a raw stream log under `data/`; it is not part of the test suite. Review and redact that log before sharing it.
+The automated suite lives in `tests/`. `scripts/stream_chat.py` is an optional manual diagnostic that calls the configured provider and writes a raw stream log under `data/`; it is not part of the suite. Review and redact that log before sharing it.
 
 ## Security notes
 
 - Never commit `.env`, `data/`, exports, or backups.
-- Put Morrow behind HTTPS before exposing it outside a trusted network.
-- Use a unique login password and session secret.
-- Treat full and cloud backups as sensitive even though cloud backup assets are encrypted.
+- Put Morrow behind HTTPS before opening the door beyond a trusted network.
+- Use a unique password and session secret.
+- Treat full and cloud backups as sensitive, even though cloud backups are encrypted.
 - Review every MCP server before enabling it; tools can read or change personal data.
-- This is a personal application, not a hardened multi-user identity platform.
+- This is a personal home, not a hardened multi-user identity platform.
 
-Please report vulnerabilities according to [SECURITY.md](SECURITY.md).
+Please report vulnerabilities privately according to [SECURITY.md](SECURITY.md).
 
 ## License
 
