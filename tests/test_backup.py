@@ -129,6 +129,18 @@ class BackupServiceTest(unittest.TestCase):
         self.assertEqual(self.db.execute("SELECT COUNT(*) FROM api_usage").fetchone()[0], 0)
         self.assertTrue((self.root / "safety" / result["safety_backup"]).is_file())
 
+    def test_note_authors_survive_backup_and_restore(self):
+        self.db.execute("ALTER TABLE notes ADD COLUMN author TEXT NOT NULL DEFAULT 'assistant'")
+        self.db.execute("INSERT INTO notes(content,created_at,author) VALUES ('At the door','2026-11-01','user')")
+        self.db.commit()
+        archive_path = self.root / 'notes.zip'
+        backup_service.create_backup(self.db, self.uploads, archive_path)
+        self.db.execute('DELETE FROM notes')
+        self.db.commit()
+        with archive_path.open('rb') as source:
+            backup_service.restore_backup(self.db, self.uploads, source, self.root / 'safety-notes')
+        self.assertEqual(self.db.execute("SELECT author FROM notes WHERE content='At the door'").fetchone()[0], 'user')
+
     def test_rejects_changed_data_json(self):
         original = self.root / "backup.zip"
         changed = self.root / "changed.zip"

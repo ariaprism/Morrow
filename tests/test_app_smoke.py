@@ -77,8 +77,10 @@ class AppSmokeTest(unittest.TestCase):
         self.assertIn('id="chatLiveStatus"', page)
         self.assertIn("chatLiveStatus.replaceChildren(pill)", page)
         self.assertIn("chatLiveStatus.replaceChildren(toolEl)", page)
-        self.assertIn('overlay:"note-wall"', page)
-        self.assertIn("closeNoteWall(true)", page)
+        self.assertIn('id="view-notes"', page)
+        self.assertIn('if(name==="notes")ready=loadNotes("");', page)
+        self.assertIn('$("#wallClose").onclick=()=>navigateMain("chat");', page)
+        self.assertNotIn('overlay:"note-wall"', page)
         self.assertEqual(tools.narrate("get_weather"), "在看窗外")
 
     def test_release_identity_is_authenticated_and_available_in_data_settings(self):

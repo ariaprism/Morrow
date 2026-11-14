@@ -40,6 +40,12 @@ class SupabaseSyncTest(unittest.TestCase):
         self.assertEqual(data["persona"]["content"], "Morrow")
         self.assertEqual(counts["messages"], 1)
 
+    def test_note_author_is_included_in_snapshot(self):
+        self.db.execute("ALTER TABLE notes ADD COLUMN author TEXT NOT NULL DEFAULT 'assistant'")
+        self.db.execute("INSERT INTO notes VALUES (1,'At the door','2026-11-01','user')")
+        data, _ = supabase_sync.build_snapshot(self.db)
+        self.assertEqual(data['notes'][0]['author'], 'user')
+
     @mock.patch.dict("os.environ", {"SUPABASE_URL":"https://example.supabase.co","SUPABASE_SECRET_KEY":"secret"})
     @mock.patch("supabase_sync.requests.post")
     def test_push_is_one_atomic_rpc_request(self, post):

@@ -727,7 +727,7 @@ class StudyApiTest(unittest.TestCase):
         self.assertIn('class="assist-prompt-card" id="studyPromptDialog"', html)
         self.assertIn('function tidySmoothPanel(panel,open,duration=300)', html)
         self.assertIn('function tidySmoothDetails(details,open,duration=320)', html)
-        self.assertIn('tidySmoothPanel($("#tidyCabinetChildren"),open,260)', html)
+        self.assertIn('function setMainNavigationGroup(group,open)', html)
         self.assertIn('tidySmoothPanel($("#studyWakeBody"),open,300)', html)
         self.assertIn('class="summary-book-reveal" hidden', html)
         self.assertIn('tidySmoothDetails(details,open,340)', html)

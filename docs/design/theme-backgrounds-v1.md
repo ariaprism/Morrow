@@ -1,6 +1,6 @@
 # Morrow theme background studies — v1
 
-Generated with the built-in image generation tool. These assets are enabled as the default backgrounds for their corresponding themes, at fixed 80% opacity for the app and 50% for chat. User-uploaded app and chat backgrounds independently override their defaults and retain their saved opacity settings; clearing an upload restores the current theme image. Night mode dims only built-in images through a brightness/saturation filter, retaining the respective opacity. Authentication is unchanged. Opaque portrait compositions with pale central negative space and soft watercolor details at the edges; no lettering or interface elements are baked in.
+Generated with the built-in image generation tool. These assets remain as design studies but are no longer loaded as default backgrounds. The app uses a CSS rose gradient and paper grain, while chat uses a solid theme color. User-uploaded app and chat backgrounds remain independent optional layers with saved opacity settings; clearing an upload restores its corresponding CSS default. Authentication is unchanged. The portrait compositions below document the earlier watercolor direction, with pale central negative space and no lettering or interface elements baked in.
 
 | Theme | Study | Asset |
 | --- | --- | --- |

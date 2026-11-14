@@ -66,7 +66,8 @@ def build_snapshot(db):
         "kind": r["kind"], "tags": _json(r.get("tags"), []),
         "created_at": r["created_at"], "updated_at": r["updated_at"],
     } for r in _rows(db, "memory_entries")]
-    notes = [{"local_id": r["id"], "content": r["content"], "created_at": r["created_at"]}
+    notes = [{"local_id": r["id"], "content": r["content"], "created_at": r["created_at"],
+              "author": "user" if r.get("author") == "user" else "assistant"}
              for r in _rows(db, "notes")]
     todos = [{
         "local_id": r["id"], "text": r["text"], "done": bool(r["done"]),

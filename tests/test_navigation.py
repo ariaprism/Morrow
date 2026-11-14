@@ -7,9 +7,10 @@ class NavigationHistoryContractTest(unittest.TestCase):
     def setUpClass(cls):
         cls.page = Path("static/index.html").read_text(encoding="utf-8")
 
-    def test_android_back_uses_a_home_rooted_history_stack(self):
+    def test_android_back_uses_a_chat_rooted_history_stack(self):
+        self.assertIn('function appRoute(level=0,view="chat",extra={})', self.page)
         self.assertIn('history.replaceState(appRoute(),"")', self.page)
-        self.assertIn('history.pushState(appRoute(1,name),"")', self.page)
+        self.assertIn('history.pushState(appRoute(1,name,destination),"")', self.page)
         self.assertIn('addEventListener("popstate"', self.page)
         self.assertIn('if(route.level>0)history.go(-route.level)', self.page)
 

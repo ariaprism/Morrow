@@ -9,8 +9,8 @@
   "launch_handler": {
     "client_mode": "navigate-existing"
   },
-  "background_color": "#faf5ed",
-  "theme_color": "#eadcc6",
+  "background_color": "#fbf8f3",
+  "theme_color": "#fbf8f3",
   "icons": [
     {
       "src": "/static/icons/icon-192.png?v=cat-1",

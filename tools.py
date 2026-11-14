@@ -127,7 +127,7 @@ def cancel_alarm(args, session_id):
 def read_note(_args, _sid):
     conn = _connect()
     row = conn.execute(
-        "SELECT content FROM notes ORDER BY id DESC LIMIT 1"
+        "SELECT content FROM notes WHERE author='assistant' ORDER BY id DESC LIMIT 1"
     ).fetchone()
     conn.close()
     if row and (row["content"] or "").strip():

@@ -9,10 +9,10 @@ from pathlib import Path
 class PwaThemeTest(unittest.TestCase):
     def test_installed_app_has_an_opaque_android_status_bar_fallback(self):
         manifest = json.loads(Path("static/manifest.json").read_text(encoding="utf-8"))
-        self.assertEqual(manifest["theme_color"], "#eadcc6")
+        self.assertEqual(manifest["theme_color"], "#fbf8f3")
 
         page = Path("static/index.html").read_text(encoding="utf-8")
-        self.assertIn('<meta name="theme-color" content="#eadcc6" id="themeColor">', page)
+        self.assertIn('<meta name="theme-color" content="#fbf8f3" id="themeColor">', page)
         sync = re.search(
             r"function syncSystemBars\(theme\)\{(?P<body>.*?)\n\}",
             page,

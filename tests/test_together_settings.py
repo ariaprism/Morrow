@@ -40,11 +40,30 @@ class TogetherSettingsTest(unittest.TestCase):
             self.assertEqual(client.put('/api/together-date', json={'date': '2024-01-01'}).json, {'date': '2024-01-01'})
             self.assertEqual(client.get('/api/together-date').json, {'date': '2024-01-01'})
             self.assertEqual(client.put('/api/together-date', json={'date': 'invalid'}).status_code, 400)
-            self.assertEqual(client.get('/api/weather/city').json, {'city': ''})
+            self.assertEqual(client.get('/api/weather/city').json, {'city': '', 'key_configured': bool(app.QWEATHER_KEY)})
             self.assertEqual(client.get('/api/weather').json, {'configured': False, 'city': ''})
             fetch.assert_not_called()
             self.assertEqual(client.put('/api/weather/city', json={'city': ''}).status_code, 200)
             self.assertEqual(client.put('/api/weather/city', json={'city': []}).status_code, 400)
+
+    def test_weather_configuration_reports_only_presence_and_skips_network(self):
+        client = app.app.test_client()
+        with mock.patch.object(app, 'AUTH_PASSWORD', 'synthetic-password'), \
+                mock.patch.object(app, 'get_setting', return_value='Fictional City'), \
+                mock.patch.object(app, 'fetch_weather', return_value={'temp': '18'}) as fetch:
+            self.assertEqual(client.get('/api/weather/city').status_code, 401)
+            with client.session_transaction() as session:
+                session['authed'] = True
+            for key, host in [('', 'weather.example.test'), ('test-key-only', ''), ('', '')]:
+                with mock.patch.object(app, 'QWEATHER_KEY', key), mock.patch.object(app, 'QWEATHER_HOST', host):
+                    self.assertEqual(client.get('/api/weather').json, {'configured': False, 'city': ''})
+                    self.assertEqual(client.get('/api/weather/city').json,
+                                     {'city': 'Fictional City', 'key_configured': bool(key)})
+            fetch.assert_not_called()
+            with mock.patch.object(app, 'QWEATHER_KEY', 'test-key-only'), \
+                    mock.patch.object(app, 'QWEATHER_HOST', 'weather.example.test'):
+                self.assertEqual(client.get('/api/weather').json, {'temp': '18'})
+                fetch.assert_called_once_with('Fictional City')
 
     def test_weather_seed_upgrade_preserves_custom_city(self):
         with tempfile.TemporaryDirectory() as directory:

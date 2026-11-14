@@ -10,18 +10,25 @@ class GreetingIdentityTest(unittest.TestCase):
     def test_default_and_custom_name_rendering(self):
         source = Path('static/index.html').read_text(encoding='utf-8')
         identity_code = source[source.index('let IDENTITY='):source.index('async function loadIdentity()')]
+        navigation_identity_code = source[source.index('function renderMainNavigationIdentity()'):source.index('function syncDesktopNavigation(')]
         greeting_code = source[source.index('const GREET='):source.index('async function loadVisit()')]
         script = """
 const assert=require('node:assert/strict');
-const nodes=new Map();
+const localStorage={getItem:()=>null},togetherDays=()=>42;
+const nodes=new Map(),cssValues=new Map();
 const $=key=>{if(!nodes.has(key))nodes.set(key,{setAttribute(){},classList:{toggle(name,value){this[name]=value;}},querySelector:()=>$('#avatarLabel')});return nodes.get(key);};
 const pronounLabel={dataset:{assistantPronoun:'{ta}的轮廓'},tagName:'SPAN'};
 const userComment={dataset:{identityCommentAuthor:'user'},setAttribute(){}};
 const aiComment={dataset:{identityCommentAuthor:'assistant'},setAttribute(){}};
 const closedSummary={},openSummary={};
-const document={querySelectorAll:selector=>selector==='[data-assistant-pronoun]'?[pronounLabel]:selector==='[data-identity-comment-author]'?[userComment,aiComment]:selector==='.boundary-closed-label'?[closedSummary]:selector==='.boundary-open-label'?[openSummary]:[],querySelector:key=>$(key)};
-""" + identity_code + greeting_code + """
+const document={documentElement:{style:{setProperty:(key,value)=>cssValues.set(key,value)}},querySelectorAll:selector=>selector==='[data-assistant-pronoun]'?[pronounLabel]:selector==='[data-identity-comment-author]'?[userComment,aiComment]:selector==='.boundary-closed-label'?[closedSummary]:selector==='.boundary-open-label'?[openSummary]:[],querySelector:key=>$(key)};
+""" + identity_code + navigation_identity_code + greeting_code + """
 currentGreeting='晚上好。';renderIdentity();
+assert.equal($('#mainNavNames').textContent,'You & Morrow');
+assert.equal($('#mainNavTogether').textContent,'42 days together');
+assert.equal(cssValues.get('--daily-user-initial'),'"Y"');
+assert.equal(cssValues.get('--daily-assistant-initial'),'"M"');
+assert.equal($('#pushPreviewIdentityCopy').textContent,'关闭时只显示“Morrow发来一条消息”');
 assert.equal($('.login-welcome').textContent,'Welcome home');
 assert.equal(userComment.textContent,'我');assert.equal(aiComment.textContent,'他');
 assert.equal($('#weAssistantPronoun').value,'他');
@@ -31,13 +38,20 @@ for(const pronoun of ['她','ta','他']){
   assert.equal(pronounLabel.textContent,pronoun+'的轮廓');
   assert.equal($('#avatarLabel').textContent,pronoun);
 }
-assert.equal($('#assistantStatus').textContent,'Morrow在想你');
 assert.equal($('#personaIdentityMark').textContent,'M');
 assert.equal($('#greeting').textContent,'晚上好。');
 assert.equal(greetingText('早上好。'),'早上好。');
 assert.equal($('#ttsScript').placeholder,'[softly] 没事的……我陪着你。');
 IDENTITY.user_name='June <3';renderIdentity();
 IDENTITY.assistant_name='Fern <3';renderIdentity();
+assert.equal($('#windowTitle').textContent,'Fern <3的行李');
+assert.equal($('#mainNavNames').textContent,'June <3 & Fern <3');
+assert.equal(cssValues.get('--daily-user-initial'),'"J"');
+assert.equal(cssValues.get('--daily-assistant-initial'),'"F"');
+assert.equal($('#mainNavUserAvatar').textContent,'J');assert.equal($('#mainNavAssistantAvatar').textContent,'F');
+localStorage.getItem=key=>key==='dailyAssistantAvatar'?'data:image/png;base64,c3ludGhldGlj':null;
+syncChatAvatarInitials();assert.equal(cssValues.get('--daily-assistant-initial'),'""');
+assert.equal(cssValues.get('--daily-user-initial'),'"J"');localStorage.getItem=()=>null;
 assert.ok($('.login-welcome').textContent.includes('June <3'));
 assert.equal(userComment.textContent,'June <3');assert.equal(aiComment.textContent,'Fern <3');
 assert.equal(closedSummary.textContent,'Fern <3把前面的记录折进小本本了');
@@ -46,13 +60,12 @@ assert.equal($('#diaryReplyIdentityLabel').textContent,'June <3的留言');
 assert.equal($('#keepsakeReplyIdentityLabel').textContent,'June <3的留言');
 assert.equal($('#stickerAudience [data-value="user"]').textContent,'June <3');
 assert.equal($('#stickerAudience [data-value="assistant"]').textContent,'Fern <3');
-assert.equal($('#assistantStatus').textContent,'Fern <3在想你');
 assert.equal($('#personaIdentityMark').textContent,'F');
 assert.equal($('.daily-chat-nook').classList['chinese-name'],false);
 IDENTITY.assistant_name='林';renderIdentity();
+assert.equal(cssValues.get('--daily-assistant-initial'),'"林"');
 assert.equal($('#personaIdentityMark').textContent,'M');
 assert.equal($('.daily-chat-nook').classList['chinese-name'],true);
-assert.equal($('.note-nook-stamp span').classList['chinese-name'],true);
 assert.equal($('#greeting').textContent,'晚上好。June <3');
 assert.equal(greetingText('早上好。'),'早上好。June <3');
 assert.equal($('#ttsScript').placeholder,'[softly] 没事的，June <3……我陪着你。');

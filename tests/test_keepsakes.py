@@ -179,10 +179,12 @@ class KeepsakeApiTest(unittest.TestCase):
             'function keepsakeSearchText',
             'e.target.closest("#tidyModeTitle")',
             '没有找到写着这些字的留影。',
-            '<span>抽屉</span>',
+            '<span>Drawer</span>',
         ):
             self.assertIn(marker, html)
-        self.assertNotIn('<span>Drawer</span>', html)
+        main_nav = html.split('id="mainNavPage"', 1)[1].split('</aside>', 1)[0]
+        self.assertIn('data-mode="keepsake"', main_nav)
+        self.assertNotIn('id="tidyDrawer"', html)
         self.assertNotIn('menuPop.appendChild(mk("keepsakes"', html)
         self.assertNotIn('label:fav?"取消收藏":"添加收藏"', html)
         self.assertNotIn('id="keepsakeDetailMask"', html)

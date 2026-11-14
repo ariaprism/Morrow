@@ -24,6 +24,8 @@ import requests
 import identity
 import greeting_settings
 import postcard_settings
+import note_service
+import ui_empty_preview
 import together_settings
 from dotenv import load_dotenv
 from flask import (
@@ -225,7 +227,8 @@ ON memory_recall_events(created_at DESC, id DESC);
 CREATE TABLE IF NOT EXISTS notes (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     content    TEXT    NOT NULL,
-    created_at TEXT    NOT NULL DEFAULT (datetime('now', '+8 hours'))
+    created_at TEXT    NOT NULL DEFAULT (datetime('now', '+8 hours')),
+    author     TEXT    NOT NULL DEFAULT 'assistant'
 );
 
 -- API 供应商（中转站/官方都算一个供应商）。models 存 JSON [{id, name}]，
@@ -851,6 +854,7 @@ def init_db():
     conn.execute(
         "UPDATE night_runs SET resume_state='resolved' WHERE resume_state=''"
     )
+    note_service.migrate(conn)
     mcp_cols = {r[1] for r in conn.execute("PRAGMA table_info(mcp_servers)").fetchall()}
     if "transport" not in mcp_cols:
         conn.execute("ALTER TABLE mcp_servers ADD COLUMN transport TEXT NOT NULL DEFAULT ''")
@@ -1256,6 +1260,22 @@ def require_auth(fn):
     return wrapper
 
 
+@app.before_request
+def empty_ui_preview():
+    if not request.path.startswith("/api/") or not ui_empty_preview.enabled(DB_PATH):
+        return None
+    result = ui_empty_preview.response(request.path, request.method)
+    if result is None:
+        return None
+    return require_auth(lambda: (jsonify(result[0]), result[1]))()
+
+
+@app.get("/api/ui-preview")
+@require_auth
+def ui_preview_status():
+    return jsonify({"empty": ui_empty_preview.enabled(DB_PATH)})
+
+
 @app.post("/api/login")
 def login():
     data = request.get_json(silent=True) or {}
@@ -1501,8 +1521,9 @@ def _restore_cloud_snapshot(db, snapshot):
                        (r["local_id"], r["content"], int(r["pinned"]), r["kind"],
                         json.dumps(r.get("tags") or [], ensure_ascii=False), r["created_at"], r["updated_at"]))
         for r in data["notes"]:
-            db.execute("INSERT INTO notes (id,content,created_at) VALUES (?,?,?)",
-                       (r["local_id"], r["content"], r["created_at"]))
+            db.execute("INSERT INTO notes (id,content,created_at,author) VALUES (?,?,?,?)",
+                       (r["local_id"], r["content"], r["created_at"],
+                        "user" if r.get("author") == "user" else "assistant"))
         for r in data["todos"]:
             db.execute("INSERT INTO todos (id,text,done,created_at,done_at) VALUES (?,?,?,?,?)",
                        (r["local_id"], r["text"], int(r["done"]), r["created_at"], r.get("done_at")))
@@ -4198,15 +4219,38 @@ def get_notes_all():
     date = (request.args.get("date") or "").strip()
     if date:
         rows = db.execute(
-            "SELECT id, content, created_at FROM notes "
+            "SELECT id, content, created_at, author FROM notes "
             "WHERE date(created_at)=? ORDER BY id DESC",
             (date,),
         ).fetchall()
     else:
         rows = db.execute(
-            "SELECT id, content, created_at FROM notes ORDER BY id DESC LIMIT 200"
+            "SELECT id, content, created_at, author FROM notes ORDER BY id DESC LIMIT 200"
         ).fetchall()
     return jsonify([dict(r) for r in rows])
+
+
+@app.get("/api/notes/latest")
+@require_auth
+def latest_note():
+    return jsonify(note_service.latest(get_db()))
+
+
+@app.post("/api/notes/seen")
+@require_auth
+def mark_note_seen():
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({"error": "Invalid note"}), 400
+    db = get_db()
+    try:
+        note_service.mark_seen(db, data.get("note_id"))
+    except ValueError:
+        return jsonify({"error": "Invalid note"}), 400
+    except LookupError:
+        return jsonify({"error": "Note not found"}), 404
+    db.commit()
+    return jsonify({"ok": True})
 
 
 @app.get("/api/notes/calendar")
@@ -4937,7 +4981,7 @@ def fetch_weather(city):
 @require_auth
 def get_weather_api():
     city = (request.args.get("city") or "").strip() or get_setting("weather_city", "")
-    if not city:
+    if not city or not QWEATHER_KEY or not QWEATHER_HOST:
         return jsonify({"configured": False, "city": ""})
     try:
         return jsonify(fetch_weather(city))
@@ -4948,7 +4992,8 @@ def get_weather_api():
 @app.get("/api/weather/city")
 @require_auth
 def get_weather_city():
-    return jsonify({"city": get_setting("weather_city", "")})
+    return jsonify({"city": get_setting("weather_city", ""),
+                    "key_configured": bool(QWEATHER_KEY)})
 
 
 @app.put("/api/weather/city")
@@ -6268,6 +6313,7 @@ def update_study_settings():
         config["enabled"] = bool(data.get("enabled"))
     if "user_note" in data:
         config["user_note"] = str(data.get("user_note") or "")[:12000]
+        note_service.sync_room_message(db, config["user_note"])
     if "provider_id" in data:
         try:
             config["provider_id"] = int(data.get("provider_id")) if data.get("provider_id") not in (None, "") else None
@@ -6732,6 +6778,7 @@ def _create_study_run_record(db, config, *, origin, job_id=None, overrides=None)
         ).fetchone()
         sleep_context_through_message_id = boundary_row["id"] if boundary_row else None
         if user_note:
+            note_service.detach_room_message(db)
             config["user_note"] = ""
             _save_study_settings(db, config)
     session_row = db.execute(
@@ -7655,6 +7702,7 @@ def delete_note(note_id):
     if row is None:
         return jsonify({"error": "这张便签不存在。"}), 404
     db.execute("DELETE FROM notes WHERE id=?", (note_id,))
+    note_service.forget_deleted(db, note_id)
     db.execute(
         "UPDATE settings SET value='' WHERE key='home_display_note_id' AND value=?",
         (str(note_id),),

@@ -12,17 +12,17 @@ class DailyChatStyleContractTest(unittest.TestCase):
         push = self.page.index('id="pushPrefsCard"')
         self.assertLess(daily, push)
         self.assertNotIn('id="tgNook"', self.page)
-        self.assertIn('localStorage.getItem("prefNook")==="1"', self.page)
+        self.assertIn('localStorage.getItem("prefNook")!=="0"', self.page)
         self.assertIn('document.body.classList.toggle("ai-bubble",daily)', self.page)
         self.assertIn('document.body.classList.toggle("daily-chat",daily)', self.page)
         self.assertIn('localStorage.setItem("prefDailyChat",e.target.checked?"1":"0")', self.page)
 
     def test_daily_messages_are_grouped_and_quiet(self):
-        self.assertIn('body.daily-chat .message-ai .ai-part:last-of-type{border-radius:17px 17px 17px 4px;}', self.page)
-        self.assertIn('body.daily-chat .bubble-user.user-bubble-stack .user-part:last-child{border-radius:17px 17px 4px 17px;}', self.page)
+        self.assertIn('body.daily-chat .message-ai .ai-part:last-of-type{border-radius:14px 14px 14px 4px;}', self.page)
+        self.assertIn('body.daily-chat .bubble-user.user-bubble-stack .user-part:last-child{border-radius:14px 14px 4px 14px;}', self.page)
         self.assertIn('body.daily-chat .ai-actions>button{display:none;}', self.page)
         self.assertIn("attachLongPress(wrap.querySelector(\".message-ai\"),()=>openAISheet(wrap),()=>document.body.classList.contains(\"daily-chat\"));", self.page)
-        self.assertIn("daily?'想了一会儿'", self.page)
+        self.assertIn("'Inside'+(!daily&&t?' · '+t:'')", self.page)
         self.assertIn('body.daily-chat .message-ai,body.daily-chat .message-ai .ai-part{-webkit-user-select:none;user-select:none;}', self.page)
         self.assertIn('body.daily-chat .ai-actions .vswitch{margin-left:auto;gap:0;font-size:10px;', self.page)
         self.assertIn('body.daily-chat .bubble-user.user-bubble-stack{gap:5px;max-width:84%;padding:0;border:0;background:transparent;', self.page)
@@ -58,13 +58,20 @@ class DailyChatStyleContractTest(unittest.TestCase):
         self.assertIn('bar.appendChild(mk("复制"', self.page)
         self.assertIn('bar.appendChild(mk("更多"', self.page)
 
-    def test_header_keeps_title_data_but_shows_nook_and_model_in_daily_mode(self):
+    def test_daily_model_moves_into_chat_settings_while_paper_keeps_input_picker(self):
         self.assertIn('class="name" id="chatTitle"', self.page)
         self.assertIn('class="daily-chat-nook">Morrow</div>', self.page)
         self.assertIn('id="dailyModelSwitch"', self.page)
         self.assertIn('if(daily)daily.textContent=name', self.page)
         self.assertIn('$("#dailyModelSwitch").onclick=openActiveModelPicker', self.page)
         self.assertIn('body.daily-chat .chat-head .name{display:none;}', self.page)
+        header = self.page.split('<div class="chat-topbar">', 1)[1].split('<div id="log">', 1)[0]
+        self.assertNotIn('id="dailyModelSwitch"', header)
+        settings = self.page.split('id="chatSetDrawer"', 1)[1].split('id="thinkToggle"', 1)[0]
+        self.assertLess(settings.index('id="dailyModelSwitch"'), settings.index('Thinking'))
+        self.assertIn('body.daily-chat .chat-head{display:none;}', self.page)
+        self.assertIn('.daily-chat-model-setting{display:none;}', self.page)
+        self.assertIn('body.daily-chat .daily-chat-model-setting{display:block;}', self.page)
 
     def test_daily_composer_is_solid_single_row_without_duplicate_controls(self):
         self.assertEqual(self.page.count('id="input"'), 1)
@@ -98,12 +105,12 @@ class DailyChatStyleContractTest(unittest.TestCase):
         self.assertIn('<button class="fs-done" id="fsDone">完成</button>', self.page)
         self.assertIn('.fs-done{border:0;background:none;', self.page)
 
-    def test_every_chat_style_uses_the_solid_topbar_status_color(self):
+    def test_every_chat_style_uses_the_surface_status_color(self):
         self.assertIn('if(m&&$("#view-chat")?.classList.contains("active"))', self.page)
-        self.assertIn('getPropertyValue("--surface-raised")', self.page)
+        self.assertIn('getPropertyValue("--surface")', self.page)
 
-    def test_daily_input_lifts_without_moving_actions(self):
-        self.assertIn('box-shadow:inset 0 1px 4px color-mix(in srgb,var(--shadow) 54%,transparent);transform:translateY(-2px);', self.page)
+    def test_daily_input_is_light_without_moving_actions(self):
+        self.assertIn('background:var(--surface-raised);box-shadow:none;transform:none;', self.page)
 
     def test_existing_right_header_actions_are_unchanged(self):
         self.assertIn('id="previewBtn" aria-label="消息预览"', self.page)
@@ -133,10 +140,12 @@ class DailyChatStyleContractTest(unittest.TestCase):
         self.assertIn('data-kind="assistant"', self.page)
         self.assertIn('document.body.classList.toggle("daily-avatars",avatars)', self.page)
         self.assertIn('const daily=prefDailyChat(),avatars=daily&&prefDailyAvatars();', self.page)
-        self.assertIn('body.daily-chat.daily-avatars .message-ai .ai-part:first-of-type{border-radius:4px 17px 17px 17px;}', self.page)
-        self.assertIn('body.daily-chat.daily-avatars .bubble-user.user-bubble-stack .user-part:first-child{border-radius:17px 4px 17px 17px;}', self.page)
-        self.assertIn('background-color:#c9e3ec', self.page)
-        self.assertIn('background-color:#efd3dc', self.page)
+        self.assertIn('body.daily-chat.daily-avatars .message-ai .ai-part:first-of-type{border-radius:4px 14px 14px 14px;}', self.page)
+        self.assertIn('body.daily-chat.daily-avatars .bubble-user.user-bubble-stack .user-part:first-child{border-radius:14px 4px 14px 14px;}', self.page)
+        self.assertIn('background-color:var(--portrait-assistant-surface)', self.page)
+        self.assertIn('background-color:var(--portrait-user-surface)', self.page)
+        self.assertIn('content:var(--daily-assistant-initial,"M")', self.page)
+        self.assertIn('content:var(--daily-user-initial,"Y")', self.page)
 
     def test_avatar_layout_adjustments_only_apply_with_daily_avatars(self):
         self.assertIn('body.daily-chat.daily-avatars .reasoning{margin-left:42px;}', self.page)
@@ -145,7 +154,7 @@ class DailyChatStyleContractTest(unittest.TestCase):
         self.assertIn('body.daily-chat .user-actions .vswitch{gap:0;font-size:10px;line-height:1;}', self.page)
 
     def test_avatar_setting_copy_and_lightweight_picker(self):
-        self.assertIn('换成更像平常聊天的样子', self.page)
+        self.assertIn('On: Daily · Off: Paper', self.page)
         self.assertIn('在每轮对话开始时露个脸', self.page)
         self.assertIn('>选择图片</button>', self.page)
         self.assertIn('>恢复默认</button>', self.page)
@@ -156,7 +165,7 @@ class DailyChatStyleContractTest(unittest.TestCase):
         self.assertIn('.daily-avatar-choice[data-kind="user"] small{right:calc(100% + 6px);', self.page)
         self.assertIn('.daily-avatar-choice[data-kind="assistant"] small{left:calc(100% + 6px);', self.page)
         self.assertIn('body.daily-chat .reasoning{margin:0 4px 0;padding:0;border:0;}', self.page)
-        self.assertIn('body.daily-chat .reasoning.collapsed + .message-ai{margin-top:-6px;}', self.page)
+        self.assertNotIn('body.daily-chat .reasoning.collapsed + .message-ai{margin-top:-6px;}', self.page)
         self.assertIn('.daily-avatar-prefs.open{max-height:260px;opacity:1;transform:none;', self.page)
         self.assertIn('.daily-avatar-uploads.open{max-height:140px;opacity:1;transform:none;', self.page)
         self.assertIn('.daily-avatar-actions.open{max-height:34px;margin-top:10px;opacity:1;', self.page)

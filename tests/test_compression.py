@@ -430,21 +430,21 @@ class CompressionTest(unittest.TestCase):
             html = source.read()
         for element_id in (
             "autoCompressCard", "autoCompressTargets", "autoCompressTokens", "autoCompressRecent",
-            "autoCompressLogs", "tidyMenuBtn", "tidyDrawer", "tidyNav",
-            "tidyCabinetToggle", "tidyCabinetChildren", "tidyModeMark",
+            "autoCompressLogs", "tidyMenuBtn", "mainNavPage",
+            "mainNavCabinetToggle", "mainNavCabinetChildren", "tidyModeMark",
             "tidySummaryPanel", "tidyFootprintPanel", "tidyToolPanel", "tidyArtifactPanel",
         ):
             self.assertIn(f'id="{element_id}"', html)
         self.assertIn('data-mode="summary"', html)
         self.assertIn('data-mode="voice"', html)
         self.assertIn('data-mode="keepsake"', html)
-        self.assertIn('<span>抽屉</span>', html)
+        self.assertIn('<span>Drawer</span>', html)
         self.assertIn('抽屉还是空的', html)
         self.assertIn('drawerMode?"private drawer"', html)
         self.assertNotIn('id="tidyTabs"', html)
         self.assertLess(
-            html.index('data-mode="tool" class="on"'),
-            html.index('data-mode="summary">Abstract'),
+            html.index('data-mode="tool"'),
+            html.index('data-mode="summary"'),
         )
         self.assertIn(".summary-log.open .result-toggle::before", html)
         self.assertIn("conic-gradient(from 45deg at left", html)

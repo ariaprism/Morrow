@@ -10,7 +10,7 @@ class WePickerTest(unittest.TestCase):
         source = Path('static/index.html').read_text(encoding='utf-8')
         self.assertIn('<input type="hidden" id="weAssistantPronoun"', source)
         self.assertIn('<input type="hidden" id="togetherDate">', source)
-        self.assertIn('<div class="we-calendar-panel" id="weDatePanel" hidden>', source)
+        self.assertIn('<div class="we-wheel-panel" id="weDatePanel" hidden>', source)
         self.assertIn('<input type="hidden" id="greetingMode"', source)
         self.assertNotIn('id="wePronounDialog"', source)
         self.assertNotIn('id="weDateDialog"', source)
@@ -55,45 +55,48 @@ assert.equal(sheetBody.children.some(child=>child.className==='sheet-choice-list
         self.assertEqual(result.returncode, 0, result.stderr)
 
     @unittest.skipUnless(shutil.which('node'), 'Node is optional')
-    def test_calendar_and_picker_interaction(self):
+    def test_wheel_dates_and_draft_confirmation(self):
         source = Path('static/index.html').read_text(encoding='utf-8')
-        code = source[source.index('let weCalendarYear='):source.index('function tickClock()')]
-        script = """
+        code = source[source.index('let weWheelDraft='):source.index('function tickClock()')]
+        script = r"""
 const assert=require('node:assert/strict');
-function node(){return {value:'',dataset:{},children:[],attrs:{},setAttribute(key,value){this.attrs[key]=value;},
-  replaceChildren(){this.children=[];},appendChild(value){this.children.push(value);},
-  showModal(){this.open=true;},close(){this.open=false;},querySelector(){return node();}};}
-const nodes=new Map(),$=key=>{if(!nodes.has(key))nodes.set(key,node());return nodes.get(key);};
-const document={createElement:()=>node()};
-let chosen=null,opened=0,closed=0;
-const openChoiceSheet=options=>{chosen=options;},openContentSheet=options=>{opened++;assert.equal(options.content,$('#weDatePanel'));};
-const closeSheet=()=>closed++;
-$('#greetingForm').oninput=()=>{$('#greetingModeText').textContent=$('#greetingMode').value==='random'?'随机':'按时段';};
-const calendarDate=()=> '2026-10-11';let previews=0;const previewTogether=()=>previews++;
-"""+code+"""
-assert.equal(weCalendarCells(2024,1).filter(Boolean).length,29);
-assert.equal(weCalendarCells(2023,1).filter(Boolean).length,28);
-assert.equal(weCalendarCells(1,0).filter(Boolean)[0].value,'0001-01-01');
-assert.equal(weCalendarCells(2026,9).filter(Boolean)[10].disabled,false);
-assert.equal(weCalendarCells(2026,9).filter(Boolean)[11].disabled,true);
-$('#weAssistantPronoun').value='她';$('#wePronounOpen').onclick();
-assert.equal(chosen.value,'她');assert.deepEqual(chosen.items.map(item=>item.value),['他','她','ta']);
-chosen.onChoose('ta');assert.equal($('#weAssistantPronoun').value,'ta');
-assert.equal($('#wePronounText').textContent,'ta');
-$('#greetingMode').value='timed';$('#greetingModeOpen').onclick();assert.equal(chosen.value,'timed');
-chosen.onChoose('random');assert.equal($('#greetingMode').value,'random');assert.equal($('#greetingModeText').textContent,'随机');
-$('#togetherDate').value='2024-02-28';$('#weDateOpen').onclick();
-assert.equal(opened,1);
-const leap=$('#weDateGrid').children.find(item=>item.attrs['aria-label']==='2024-02-29');
-leap.onclick();assert.equal($('#togetherDate').value,'2024-02-29');
-assert.equal(previews,1);assert.equal(closed,1);
-$('#weDateOpen').onclick();assert.equal(opened,2);
-assert.equal($('#weDateGrid').children.find(item=>item.attrs['aria-label']==='2024-02-29').attrs['aria-pressed'],'true');
-$('#weDateClose').onclick();assert.equal(closed,2);
-weCalendarYear=2024;weCalendarMonth=0;moveWeCalendar(-1);assert.equal(weCalendarYear,2023);assert.equal(weCalendarMonth,11);
-weCalendarYear=1;weCalendarMonth=0;moveWeCalendar(-1);assert.equal(weCalendarYear,1);
-weCalendarYear=9999;weCalendarMonth=11;moveWeCalendar(1);assert.equal(weCalendarYear,9999);
-$('#weDateYear').value='0';$('#weDateYear').onchange();assert.equal(weCalendarYear,9999);
+function element(){return {value:'',dataset:{},style:{},children:[],attrs:{},scrollTop:0,
+ setAttribute(k,v){this.attrs[k]=v},addEventListener(){},replaceChildren(){this.children=[]},
+ appendChild(child){if(child.fragment)this.children.push(...child.children);else this.children.push(child)},
+ scrollTo({top}){this.scrollTop=top}}}
+const nodes=new Map(),$=key=>{if(!nodes.has(key))nodes.set(key,element());return nodes.get(key)};
+const document={createElement:element,createDocumentFragment:()=>({...element(),fragment:true})};
+const calendarDate=()=> '2026-10-11',reducedMotion=true;
+const requestAnimationFrame=fn=>{fn();return 1},clearTimeout=()=>{};
+let closed=0,previews=0,chosen;
+const closeSheet=()=>closed++,previewTogether=()=>previews++;
+const openContentSheet=()=>{},openChoiceSheet=value=>chosen=value;
+"""+code+r"""
+assert.equal(weDaysInMonth(2024,2),29);
+assert.equal(weDaysInMonth(1900,2),28);
+assert.equal(weDaysInMonth(2000,2),29);
+assert.deepEqual(clampWeDate([2023,2,29]),[2023,2,28]);
+assert.deepEqual(clampWeDate([2024,4,31]),[2024,4,30]);
+assert.deepEqual(clampWeDate([2027,12,31]),[2026,10,11]);
+assert.deepEqual(clampWeDate([1,1,1]),[1,1,1]);
+assert.deepEqual(weWheelLimits([2026,10,11]),[2026,10,11]);
+assert.deepEqual(weWheelLimits([2024,2,29]),[2026,12,29]);
+$('#togetherDate').value='2024-02-29';$('#weDateOpen').onclick();
+assert.equal($('#weWheelDay').children.length,29);
+assert.equal($('#weWheelDay').attrs['aria-valuenow'],'29');
+$('#weWheelYear').scrollTop=(2023-1)*44;settleWeWheel(weWheelStates[0]);
+assert.deepEqual(weWheelDraft,[2023,2,28]);
+assert.equal($('#weWheelDay').children.length,28);
+assert.equal($('#togetherDate').value,'2024-02-29');
+$('#weDateClose').onclick();assert.equal(previews,0);
+$('#weDateOpen').onclick();$('#weWheelDay').scrollTop=27*44;
+$('#weDateDone').onclick();assert.equal($('#togetherDate').value,'2024-02-28');
+assert.equal(previews,1);assert.equal(closed,2);
+$('#togetherDate').value='2026-10-01';$('#weDateOpen').onclick();
+$('#weWheelDay').onkeydown({key:'End',preventDefault(){}});
+$('#weDateDone').onclick();assert.equal($('#togetherDate').value,'2026-10-11');
 """
         result = subprocess.run([shutil.which('node'), '-e', script], capture_output=True, text=True, encoding='utf-8')
         self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('scroll-snap-type:y mandatory', source)
+        self.assertIn('role="spinbutton"', source)

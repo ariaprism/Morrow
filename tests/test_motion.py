@@ -33,11 +33,11 @@ class MotionContractTest(unittest.TestCase):
         self.assertIn(selector + '{display:grid;grid-template-columns:minmax(0,1fr);align-content:start;overflow:visible;}', self.page)
         self.assertNotIn(selector + '{display:grid;grid-template-columns:minmax(0,1fr);align-content:start;overflow-x:hidden;}', self.page)
 
-    def test_tidy_drawer_extends_behind_floating_navigation(self):
-        self.assertIn('.tidy-drawer-mask{position:fixed;z-index:18;\n      inset:0;', self.page)
-        self.assertIn('.tidy-drawer{position:fixed;z-index:19;left:0;top:0;bottom:0;', self.page)
-        self.assertIn('.bottom-nav{position:absolute;', self.page)
-        self.assertIn('transition:transform .25s var(--ease);z-index:20;', self.page)
+    def test_fullscreen_navigation_replaces_the_internal_tidy_drawer(self):
+        self.assertNotIn('.tidy-drawer-mask', self.page)
+        self.assertNotIn('id="tidyDrawer"', self.page)
+        self.assertIn('.main-nav-page{position:absolute;inset:0;z-index:60;', self.page)
+        self.assertIn('transition:opacity .22s var(--ease),visibility .22s;', self.page)
 
     def test_two_way_pills_use_a_sliding_indicator(self):
         self.assertIn('.mem-tabs::before', self.page)
@@ -56,13 +56,13 @@ class MotionContractTest(unittest.TestCase):
     def test_reasoning_header_and_body_animate_independently(self):
         self.assertIn('@keyframes thoughtHalo', self.page)
         self.assertIn('function toggleReasoning(rb)', self.page)
-        self.assertIn('const animation=body.animate', self.page)
-        self.assertIn('head.classList.add("thought-pulse")', self.page)
+        self.assertIn('.reasoning-reveal{display:grid;grid-template-rows:1fr;', self.page)
+        self.assertIn('.reasoning.collapsed .reasoning-reveal{grid-template-rows:0fr;', self.page)
         self.assertIn('&&!rb.classList.contains("collapsed"))toggleReasoning(rb)', self.page)
 
     def test_reduced_motion_disables_decorative_motion(self):
         self.assertIn('@media (prefers-reduced-motion:reduce)', self.page)
-        self.assertIn('if(reducedMotion){rb.classList.toggle("collapsed");return;}', self.page)
+        self.assertIn('if(!reducedMotion&&head.animate)', self.page)
 
     def test_composer_sheet_uses_its_real_flow_height(self):
         self.assertIn('function plusPopFlowHeight()', self.page)
@@ -97,9 +97,11 @@ class MotionContractTest(unittest.TestCase):
         self.assertIn('box-shadow:inset 14px 0 19px -17px rgba(0,0,0,.78)', self.page)
         self.assertIn('<div class="study-door-slip">', self.page)
         self.assertIn('.study-note-stamp.sealed svg{animation:studyPawSeal', self.page)
-        self.assertIn('class="horizon-stamp" aria-hidden="true"><svg class="postcard-art"', self.page)
+        self.assertIn('class="main-nav-postcard" id="mainNavPostcard" hidden', self.page)
         for design in ('light', 'leaf', 'tomorrow'):
-            self.assertEqual(self.page.count('id="postcard-'+design+'"'), 1)
+            self.assertNotIn('id="postcard-'+design+'"', self.page)
+        self.assertIn('grid-template-rows .35s var(--ease)', self.page)
+        self.assertIn('.main-nav-children.open .main-nav-children-inner::before{transform:scaleY(1);}', self.page)
 
     def test_footprint_keeps_original_room_style_with_plain_monologues(self):
         self.assertIn('.study-monologue-event{padding:13px 15px 14px 18px;', self.page)
