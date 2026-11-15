@@ -1,3 +1,4 @@
+import re
 import shutil
 import subprocess
 import unittest
@@ -54,6 +55,20 @@ assert.equal(modelDisplayName({id:'fictional-model'}),'fictional-model');
         self.assertIn('role="tablist"', self.page)
         heading = self.page.split('<div class="settings-heading">', 1)[1].split('</div>', 1)[0]
         self.assertLess(heading.index('id="settingsNavBtn"'), heading.index('class="page-title"'))
+
+    def test_stop_button_preserves_send_button_geometry(self):
+        # State styles must inherit the circular send control's geometry so
+        # switching to stop cannot overflow the composer's 32px grid column.
+        rules = re.findall(r'([^{}]+)\{([^{}]*)\}', self.page.split('</style>', 1)[0])
+        stop_rules = [body for selector, body in rules
+                      if any(part.strip().endswith('.send-btn.stop')
+                             for part in selector.split(','))]
+        self.assertTrue(stop_rules)
+        for body in stop_rules:
+            properties = {declaration.split(':', 1)[0].strip()
+                          for declaration in body.split(';') if ':' in declaration}
+            self.assertFalse(properties & {'width', 'height', 'min-width', 'min-height',
+                                           'padding', 'border-radius', 'transform'})
 
     def test_composer_order_and_live_chat_reveal(self):
         toolbar = self.page.split('<div class="composer-bottom">', 1)[1].split('<div class="plus-pop"', 1)[0]

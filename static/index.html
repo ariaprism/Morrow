@@ -1312,7 +1312,6 @@
     body.daily-chat .send-btn{width:42px;height:36px;border-radius:10px;box-shadow:none;font-family:inherit;}
     body.daily-chat .send-btn .send-main-icon{display:none;}
     body.daily-chat .send-btn .daily-send-heart{display:block;width:19px;height:19px;stroke-width:1.8;}
-    body.daily-chat .send-btn.stop{width:38px;border-radius:10px;}
     body.daily-chat .send-btn.stop .send-main-icon{display:block;width:17px;height:17px;}
     body.daily-chat .send-btn.stop .daily-send-heart{display:none;}
     body.daily-chat .attach-row{margin-left:0;margin-right:0;}
@@ -6964,7 +6963,7 @@ input.addEventListener("focus",()=>{input.placeholder=pickOne(COMPOSER_HINTS);
 input.addEventListener("blur",()=>setTimeout(()=>{if(document.activeElement!==input)$("#expandBtn").hidden=true;},150));
 $("#expandBtn").addEventListener("mousedown",e=>e.preventDefault());
 // Enter = newline. Messages send only via the 飞机 button (per request).
-// send-btn doubles as stop while streaming (circle → square)
+// Keep the circular send button; only its icon changes while streaming.
 const ICON_SEND='<path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>';
 const ICON_STOP='<rect x="7" y="7" width="10" height="10" rx="2.5"/>';
 let streaming=false,sending=false,preparingSend=false,abortCtl=null;
