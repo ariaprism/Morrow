@@ -92,7 +92,7 @@ class AppSmokeTest(unittest.TestCase):
             "NOOK_RELEASE_SHA": "ba16f43abcdef1234567890",
         }):
             payload = client.get("/api/version").get_json()
-        self.assertEqual(payload["version"], "v0.1.0")
+        self.assertEqual(payload["version"], "v0.2.0")
         self.assertEqual(payload["commit_short"], "ba16f43")
         response = client.get("/")
         page = response.get_data(as_text=True)

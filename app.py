@@ -99,7 +99,7 @@ def _release_info():
         except OSError:
             return ""
 
-    version = read_value("VERSION") or "v0.1.0"
+    version = read_value("VERSION") or "v0.2.0"
     sha = read_value("nook-release-sha", "NOOK_RELEASE_SHA")
     return {"version": version[:80], "commit": sha[:40], "commit_short": sha[:7]}
 
