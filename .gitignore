@@ -47,3 +47,7 @@ Thumbs.db
 *.key
 nook-release-version
 nook-release-sha
+
+# Generated standalone demo and local preview configuration
+dist/
+.openai/

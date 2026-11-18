@@ -30,3 +30,5 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: node --test tests/music_bridge.test.mjs tests/push_capabilities.test.mjs
+      - run: node --test tests/demo.test.mjs
+      - run: python scripts/build_demo.py

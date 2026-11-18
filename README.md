@@ -162,6 +162,13 @@ The automated suite lives in `tests/`. `scripts/stream_chat.py` is an optional m
 
 Please report vulnerabilities privately according to [SECURITY.md](SECURITY.md).
 
+## Browser demo build
+
+Run `python scripts/build_demo.py` to produce a standalone, fictional interactive
+demo in `dist/`, ready for Cloudflare Pages. Visitors' changes stay in their own
+browser; real API keys and external integrations are disabled. See
+[demo/README.md](demo/README.md) for hosting and privacy behavior.
+
 ## License
 
 Morrow is available under the [MIT License](LICENSE).
