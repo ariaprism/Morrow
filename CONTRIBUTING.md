@@ -8,4 +8,8 @@ Thank you for helping improve Morrow.
 4. Run `python -m compileall -q -x '(^|[\\/])(?:\.venv|venv|node_modules|data)([\\/]|$)' .` and `python -m unittest discover -s tests -p "test_*.py"` before opening a pull request.
 5. Explain user-visible changes and any migration or privacy impact in the pull request.
 
+For changes to the static demo, also run `node --test tests/static_demo.test.mjs` and
+`python scripts/build_demo.py`. The build must never read `.env` or runtime data. See
+[demo/README.md](demo/README.md) for browser QA and Cloudflare Pages configuration.
+
 By contributing, you agree that your contribution is licensed under the MIT License.

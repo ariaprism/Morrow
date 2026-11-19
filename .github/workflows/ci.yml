@@ -29,4 +29,5 @@ jobs:
           node-version: "20"
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
-      - run: node --test tests/music_bridge.test.mjs tests/push_capabilities.test.mjs
+      - run: node --test tests/music_bridge.test.mjs tests/push_capabilities.test.mjs tests/static_demo.test.mjs
+      - run: python scripts/build_demo.py

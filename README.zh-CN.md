@@ -1,5 +1,7 @@
 # Morrow
 
+无需后端的公开作品集预览见[静态演示与 Cloudflare Pages 配置](demo/README.md)：沿用现有 UI、使用虚构数据，访问者的修改只保存在各自浏览器，与私人部署分离。
+
 [English](README.md) | **简体中文**
 
 <a href="https://github.com/DasterProkio/awesome-ai-companion/blob/main/README.zh-CN.md">

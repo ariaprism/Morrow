@@ -50,6 +50,8 @@ Morrow is a Flask application with a single-file SPA and SQLite storage. The int
 
 ## Building the house
 
+For a public portfolio preview without a server, see the [browser-local demo and Cloudflare Pages setup](demo/README.md). It reuses the product UI with fictional data; visitor edits stay in their browser. It is separate from the private Flask deployment.
+
 Clone the repository:
 
 ```bash
