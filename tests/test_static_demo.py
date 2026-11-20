@@ -2,10 +2,21 @@ import importlib.util
 import json
 import tempfile
 import unittest
+from datetime import date
 from pathlib import Path
 
 
 class StaticDemoBuildTest(unittest.TestCase):
+    def test_worker_configuration_deploys_only_built_static_assets(self):
+        config = json.loads(Path('wrangler.json').read_text(encoding='utf-8'))
+        date.fromisoformat(config['compatibility_date'])
+        self.assertTrue(config['name'])
+        self.assertEqual(Path(config['assets']['directory']), Path('data/demo-site/dist'))
+        self.assertFalse(set(config) & {
+            'main', 'vars', 'secrets', 'account_id', 'routes',
+            'd1_databases', 'kv_namespaces', 'r2_buckets',
+        })
+
     def test_build_has_only_public_assets_and_no_backend_dependency(self):
         source = Path('static/index.html').read_bytes()
         spec = importlib.util.spec_from_file_location('build_static_demo', 'scripts/build_demo.py')

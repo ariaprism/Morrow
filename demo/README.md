@@ -57,6 +57,27 @@ For a subdomain such as `morrow.example.com`, keep the registrar and DNS provide
 Do not create the CNAME before associating the hostname with the Pages project. A custom
 apex domain has different nameserver requirements. See [Cloudflare custom domains](https://developers.cloudflare.com/pages/configuration/custom-domains/).
 
+## Cloudflare Workers Builds
+
+Workers projects use a deploy command rather than the Pages output-directory field.
+The root `wrangler.json` declares the static asset directory and a pinned runtime
+compatibility date. No Worker script, account ID, credentials or database bindings
+are included. Keep the dashboard Worker name consistent with the configuration name.
+
+| Setting | Value |
+| --- | --- |
+| Production branch | The branch containing this demo |
+| Build command | `python scripts/build_demo.py` |
+| Deploy command | `npx wrangler deploy` |
+| Root directory | Repository root |
+
+The explicit command `npx wrangler deploy --name morrow --assets ./data/demo-site/dist`
+also reads the compatibility date from `wrangler.json`. A missing compatibility date
+causes deployment to fail even when the static build succeeds. A new push triggers
+a new build for the selected branch; an old build record retains its original commit.
+Workers custom-domain setup differs from Pages; follow the dashboard instructions
+for the selected product when attaching a domain.
+
 ## Checks
 
 ```sh

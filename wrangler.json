@@ -1,0 +1,7 @@
+{
+  "name": "morrow",
+  "compatibility_date": "2026-11-18",
+  "assets": {
+    "directory": "./data/demo-site/dist"
+  }
+}
